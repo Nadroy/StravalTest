@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>STRAVAL — Carte des spots</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    :root {
+      --terra: #C1714F; --terra-dark: #9B5A3A; --terra-light: #E8A882;
+      --green: #4C6A3C; --green-light: #7A9A65;
+      --cream: #F5EDE0; --cream-dark: #E8D9C0;
+      --text: #2C2015; --text-light: #6B5744; --white: #FFFDF8;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* HEADER */
+    header { background: rgba(245,237,224,0.97); backdrop-filter: blur(10px); border-bottom: 1px solid var(--cream-dark); padding: 0 2rem; flex-shrink: 0; z-index: 1000; }
+    nav { max-width: 100%; display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 1rem; }
+    .logo { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; flex-shrink: 0; }
+    .logo-icon { width: 34px; height: 34px; }
+    .logo-text { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--terra-dark); letter-spacing: 0.05em; }
+    .logo-text span { color: var(--green); }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+    .nav-links a { text-decoration: none; font-size: 0.9rem; font-weight: 500; color: var(--text-light); transition: color 0.2s; }
+    .nav-links a:hover, .nav-links a.active { color: var(--terra); }
+    .btn-nav { background: var(--terra); color: var(--white) !important; padding: 0.45rem 1.1rem; border-radius: 2rem; }
+    .btn-nav:hover { background: var(--terra-dark) !important; }
+    .nav-toggle { display: none; background: none; border: none; cursor: pointer; flex-direction: column; gap: 5px; }
+    .nav-toggle span { display: block; width: 25px; height: 2px; background: var(--text); border-radius: 2px; }
+
+    /* LAYOUT CARTE */
+    .map-layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* SIDEBAR */
+    .sidebar { width: 360px; flex-shrink: 0; background: var(--white); border-right: 1px solid var(--cream-dark); display: flex; flex-direction: column; overflow: hidden; z-index: 10; }
+    .sidebar-header { padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--cream-dark); }
+    .sidebar-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 600; color: var(--text); margin-bottom: 0.8rem; }
+    .search-bar { display: flex; gap: 0.6rem; }
+    .search-input { flex: 1; padding: 0.6rem 0.9rem; border: 1.5px solid var(--cream-dark); border-radius: 2rem; font-size: 0.88rem; background: var(--cream); color: var(--text); outline: none; font-family: 'Inter', sans-serif; transition: border-color 0.2s; }
+    .search-input:focus { border-color: var(--terra); }
+    .search-input::placeholder { color: var(--text-light); }
+    .btn-locate { background: var(--green); color: white; border: none; padding: 0.6rem 0.9rem; border-radius: 2rem; cursor: pointer; font-size: 0.85rem; white-space: nowrap; font-weight: 500; transition: background 0.2s; }
+    .btn-locate:hover { background: var(--green-light); }
+
+    /* FILTRES */
+    .filters { padding: 0.9rem 1.4rem; border-bottom: 1px solid var(--cream-dark); display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .filter-chip { background: var(--cream); border: 1.5px solid var(--cream-dark); color: var(--text-light); padding: 0.3rem 0.85rem; border-radius: 2rem; font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .filter-chip:hover { border-color: var(--terra); color: var(--terra); }
+    .filter-chip.active { background: var(--terra); border-color: var(--terra); color: white; }
+
+    /* LISTE SPOTS */
+    .spots-list { flex: 1; overflow-y: auto; padding: 0.8rem; }
+    .spots-list::-webkit-scrollbar { width: 5px; }
+    .spots-list::-webkit-scrollbar-thumb { background: var(--cream-dark); border-radius: 3px; }
+    .spot-item { display: flex; gap: 0.9rem; padding: 0.9rem; border-radius: 1rem; cursor: pointer; transition: background 0.2s; border: 1.5px solid transparent; margin-bottom: 0.5rem; }
+    .spot-item:hover { background: var(--cream); }
+    .spot-item.selected { background: var(--cream); border-color: var(--terra); }
+    .spot-thumb { width: 56px; height: 56px; border-radius: 0.8rem; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0; }
+    .thumb-foret { background: linear-gradient(135deg, #2d4a1e, #4C6A3C); }
+    .thumb-montagne { background: linear-gradient(135deg, #3a3025, #6b5a45); }
+    .thumb-riviere { background: linear-gradient(135deg, #1a3a4a, #2a7a8a); }
+    .thumb-plage { background: linear-gradient(135deg, #8B6914, #c4a43a); }
+    .thumb-prairie { background: linear-gradient(135deg, #3a5a1a, #7aaa3a); }
+    .spot-info { flex: 1; min-width: 0; }
+    .spot-name { font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .spot-meta { font-size: 0.78rem; color: var(--text-light); margin: 0.15rem 0; }
+    .spot-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.3rem; }
+    .tag { background: var(--cream); color: var(--text-light); font-size: 0.7rem; padding: 0.15rem 0.6rem; border-radius: 1rem; }
+    .tag-note { background: rgba(193,113,79,0.12); color: var(--terra-dark); font-weight: 600; }
+
+    /* ADD SPOT BTN */
+    .add-spot-btn { margin: 0.8rem; padding: 0.8rem; background: var(--terra); color: white; border: none; border-radius: 1rem; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background 0.2s, transform 0.2s; }
+    .add-spot-btn:hover { background: var(--terra-dark); transform: translateY(-1px); }
+
+    /* CARTE */
+    #map { flex: 1; z-index: 1; }
+
+    /* POPUP personnalisé */
+    .custom-popup .leaflet-popup-content-wrapper { background: var(--white); border-radius: 1.2rem; box-shadow: 0 8px 32px rgba(44,32,21,0.15); border: 1px solid var(--cream-dark); padding: 0; overflow: hidden; }
+    .custom-popup .leaflet-popup-tip { background: var(--white); }
+    .popup-img { height: 90px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
+    .popup-body { padding: 0.9rem 1.1rem 1rem; }
+    .popup-name { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 600; color: var(--text); margin-bottom: 0.2rem; }
+    .popup-loc { font-size: 0.8rem; color: var(--text-light); margin-bottom: 0.6rem; }
+    .popup-footer { display: flex; align-items: center; justify-content: space-between; }
+    .popup-note { font-size: 0.82rem; font-weight: 700; color: var(--terra); }
+    .popup-btn { background: var(--green); color: white; padding: 0.35rem 0.9rem; border-radius: 2rem; text-decoration: none; font-size: 0.8rem; font-weight: 500; border: none; cursor: pointer; transition: background 0.2s; }
+    .popup-btn:hover { background: var(--green-light); }
+
+    /* MODAL AJOUT SPOT */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(44,32,21,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(4px); }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal { background: var(--white); border-radius: 1.8rem; padding: 2rem; width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto; transform: translateY(20px); transition: transform 0.3s; }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .modal-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; color: var(--text); }
+    .modal-close { background: var(--cream); border: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; color: var(--text-light); transition: background 0.2s; }
+    .modal-close:hover { background: var(--cream-dark); }
+    .form-group { margin-bottom: 1.2rem; }
+    .form-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text); margin-bottom: 0.4rem; }
+    .form-input, .form-textarea, .form-select { width: 100%; padding: 0.7rem 1rem; border: 1.5px solid var(--cream-dark); border-radius: 0.8rem; font-size: 0.9rem; background: var(--cream); color: var(--text); outline: none; font-family: 'Inter', sans-serif; transition: border-color 0.2s; }
+    .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--terra); }
+    .form-textarea { resize: vertical; min-height: 90px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+    .btn-submit { width: 100%; padding: 0.85rem; background: var(--terra); color: white; border: none; border-radius: 1rem; font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.2s; margin-top: 0.5rem; }
+    .btn-submit:hover { background: var(--terra-dark); transform: translateY(-1px); }
+    .login-hint { text-align: center; font-size: 0.82rem; color: var(--text-light); margin-top: 0.8rem; }
+    .login-hint a { color: var(--terra); font-weight: 500; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--green); color: white; padding: 0.8rem 1.6rem; border-radius: 2rem; font-size: 0.9rem; font-weight: 500; z-index: 3000; transition: transform 0.4s ease; box-shadow: 0 4px 20px rgba(44,32,21,0.2); }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 768px) {
+      .map-layout { flex-direction: column-reverse; }
+      .sidebar { width: 100%; height: 45vh; border-right: none; border-top: 1px solid var(--cream-dark); }
+      #map { flex: 1; min-height: 55vw; }
+      .nav-links { display: none; }
+      .nav-links.open { display: flex; flex-direction: column; position: absolute; top: 64px; left: 0; right: 0; background: var(--cream); padding: 1rem 2rem; border-bottom: 1px solid var(--cream-dark); z-index: 999; }
+      .nav-toggle { display: flex; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a href="index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 38 38" fill="none">
+        <circle cx="19" cy="19" r="19" fill="#4C6A3C" opacity="0.15"/>
+        <path d="M19 6 C12 10, 8 17, 11 24 C14 30, 22 32, 27 27 C32 22, 30 12, 19 6Z" fill="#4C6A3C"/>
+        <path d="M19 6 L17 26" stroke="#F5EDE0" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M19 14 C17 17, 16 20, 19 22 C22 20, 21 17, 19 14Z" fill="#C1714F"/>
+      </svg>
+      <span class="logo-text">STRA<span>VAL</span></span>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="map.html" class="active">Carte</a></li>
+      <li><a href="spots.html">Spots</a></li>
+      <li><a href="login.html" class="btn-nav">Connexion</a></li>
+    </ul>
+    <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
+  </nav>
+</header>
+
+<div class="map-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Spots communautaires</div>
+      <div class="search-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="Rechercher un spot…"/>
+        <button class="btn-locate" id="locateBtn">📍 Me localiser</button>
+      </div>
+    </div>
+    <div class="filters">
+      <div class="filter-chip active" data-filter="all">Tous</div>
+      <div class="filter-chip" data-filter="foret">🌲 Forêt</div>
+      <div class="filter-chip" data-filter="montagne">⛰️ Montagne</div>
+      <div class="filter-chip" data-filter="riviere">💧 Rivière</div>
+      <div class="filter-chip" data-filter="plage">🏖️ Plage</div>
+      <div class="filter-chip" data-filter="prairie">🌾 Prairie</div>
+    </div>
+    <div class="spots-list" id="spotsList"></div>
+    <button class="add-spot-btn" id="addSpotBtn">＋ Proposer un spot</button>
+  </aside>
+  <div id="map"></div>
+</div>
+
+<!-- Modal ajout spot -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🌿 Proposer un spot</div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nom du spot *</label>
+      <input type="text" class="form-input" placeholder="Ex: Clairière des Vents" id="spotNameInput"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea class="form-textarea" placeholder="Décris ce lieu en quelques mots…" id="spotDescInput"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Type de lieu *</label>
+        <select class="form-select" id="spotTypeInput">
+          <option value="foret">🌲 Forêt</option>
+          <option value="montagne">⛰️ Montagne</option>
+          <option value="riviere">💧 Rivière</option>
+          <option value="plage">🏖️ Plage</option>
+          <option value="prairie">🌾 Prairie</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Région</label>
+        <input type="text" class="form-input" placeholder="Ex: Île-de-France" id="spotRegionInput"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Latitude</label>
+        <input type="number" class="form-input" id="spotLat" placeholder="48.8566" step="0.0001"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Longitude</label>
+        <input type="number" class="form-input" id="spotLng" placeholder="2.3522" step="0.0001"/>
+      </div>
+    </div>
+    <p style="font-size:0.8rem;color:var(--text-light);margin:-0.5rem 0 1rem;">💡 Clique sur la carte pour remplir les coordonnées automatiquement.</p>
+    <button class="btn-submit" id="submitSpot">Proposer ce spot 🌿</button>
+    <p class="login-hint">En tant qu'invité, votre spot sera soumis à validation. <a href="login.html">Connectez-vous</a> pour publier directement.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // Données des spots
+  const SPOTS = [
+    { id:1, name:"Clairière des Vents", loc:"Fontainebleau, Île-de-France", type:"foret", emoji:"🌲", note:4.9, lat:48.4044, lng:2.7005, desc:"Une clairière lumineuse au cœur de la forêt de Fontainebleau. Idéale pour méditer au lever du soleil.", tags:["Méditation","Balade"] },
+    { id:2, name:"Crête des Soupirs", loc:"Vercors, Auvergne-Rhône-Alpes", type:"montagne", emoji:"⛰️", note:4.6, lat:45.0429, lng:5.5047, desc:"Un panorama époustouflant sur les Alpes depuis cette crête sauvage.", tags:["Randonnée","Vue panoramique"] },
+    { id:3, name:"Méandre Sauvage", loc:"Ardèche, Occitanie", type:"riviere", emoji:"🏞️", note:4.8, lat:44.3028, lng:4.2836, desc:"L'Ardèche dans sa forme la plus sauvage. Baignade et contemplation garanties.", tags:["Baignade","Nature"] },
+    { id:4, name:"Dunes du Silence", loc:"Landes, Nouvelle-Aquitaine", type:"plage", emoji:"🏖️", note:4.5, lat:44.3458, lng:-1.3267, desc:"Des dunes immenses battues par l'Atlantique. Un endroit hors du temps.", tags:["Surf","Coucher de soleil"] },
+    { id:5, name:"Prairie des Lucioles", loc:"Corrèze, Nouvelle-Aquitaine", type:"prairie", emoji:"🌾", note:4.7, lat:45.2711, lng:1.7716, desc:"En été, cette prairie s'illumine de lucioles au crépuscule. Magique.", tags:["Photographie","Soirée"] },
+    { id:6, name:"Cascade de Mouthe", loc:"Doubs, Bourgogne-Franche-Comté", type:"riviere", emoji:"💧", note:4.9, lat:46.7047, lng:6.1983, desc:"La source du Doubs jaillit dans un cirque naturel d'une beauté rare.", tags:["Randonnée","Eau"] },
+    { id:7, name:"Bois du Cerf", loc:"Sologne, Centre-Val de Loire", type:"foret", emoji:"🌲", note:4.4, lat:47.5200, lng:2.0100, desc:"Forêt dense et mystérieuse, habitat naturel des cerfs de Sologne.", tags:["Faune","Silence"] },
+    { id:8, name:"Col des Nuages", loc:"Pyrénées, Occitanie", type:"montagne", emoji:"⛰️", note:4.8, lat:42.7885, lng:0.8036, desc:"À 2300m d'altitude, les nuages se forment sous vos pieds. Une expérience unique.", tags:["Altitude","Contemplation"] },
+  ];
+
+  let selectedSpotId = null;
+  let activeFilter = 'all';
+  let markers = {};
+  let pendingLatLng = null;
+
+  // Init carte
+  const map = L.map('map', { zoomControl: false }).setView([46.5, 2.5], 6);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CARTO', maxZoom: 19
+  }).addTo(map);
+  L.control.zoom({ position: 'topright' }).addTo(map);
+
+  // Icône personnalisée
+  function makeIcon(emoji, selected = false) {
+    return L.divIcon({
+      html: `<div style="background:${selected ? '#9B5A3A' : '#C1714F'};width:${selected?42:36}px;height:${selected?42:36}px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid white;box-shadow:0 3px 12px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;transition:all 0.2s">
+        <span style="transform:rotate(45deg);font-size:${selected?1.1:0.95}rem">${emoji}</span></div>`,
+      iconSize: [selected ? 42 : 36, selected ? 42 : 36],
+      iconAnchor: [selected ? 21 : 18, selected ? 42 : 36],
+      className: ''
+    });
+  }
+
+  function popupHTML(s) {
+    const colors = { foret:'linear-gradient(135deg,#2d4a1e,#4C6A3C)', montagne:'linear-gradient(135deg,#3a3025,#6b5a45)', riviere:'linear-gradient(135deg,#1a3a4a,#2a7a8a)', plage:'linear-gradient(135deg,#8B6914,#c4a43a)', prairie:'linear-gradient(135deg,#3a5a1a,#7aaa3a)' };
+    return `<div class="popup-img" style="background:${colors[s.type]}">${s.emoji}</div>
+      <div class="popup-body">
+        <div class="popup-name">${s.name}</div>
+        <div class="popup-loc">📍 ${s.loc}</div>
+        <div class="popup-footer">
+          <span class="popup-note">⭐ ${s.note}</span>
+          <button class="popup-btn" onclick="selectSpot(${s.id})">Détails</button>
+        </div>
+      </div>`;
+  }
+
+  // Placer les marqueurs
+  SPOTS.forEach(s => {
+    const marker = L.marker([s.lat, s.lng], { icon: makeIcon(s.emoji) })
+      .addTo(map)
+      .bindPopup(popupHTML(s), { className:'custom-popup', maxWidth:220 });
+    marker.on('click', () => selectSpot(s.id));
+    markers[s.id] = marker;
+  });
+
+  function selectSpot(id) {
+    if (selectedSpotId) markers[selectedSpotId]?.setIcon(makeIcon(SPOTS.find(s=>s.id===selectedSpotId)?.emoji));
+    selectedSpotId = id;
+    const s = SPOTS.find(s => s.id === id);
+    if (!s) return;
+    markers[id]?.setIcon(makeIcon(s.emoji, true));
+    map.flyTo([s.lat, s.lng], 13, { animate: true, duration: 1 });
+    markers[id]?.openPopup();
+    document.querySelectorAll('.spot-item').forEach(el => el.classList.toggle('selected', parseInt(el.dataset.id) === id));
+    document.querySelector(`.spot-item[data-id="${id}"]`)?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+
+  // Rendu sidebar
+  function renderSidebar(filter = 'all', search = '') {
+    const list = document.getElementById('spotsList');
+    const filtered = SPOTS.filter(s =>
+      (filter === 'all' || s.type === filter) &&
+      (search === '' || s.name.toLowerCase().includes(search.toLowerCase()) || s.loc.toLowerCase().includes(search.toLowerCase()))
+    );
+    const colors = { foret:'thumb-foret', montagne:'thumb-montagne', riviere:'thumb-riviere', plage:'thumb-plage', prairie:'thumb-prairie' };
+    list.innerHTML = filtered.length === 0 ? `<div style="padding:2rem;text-align:center;color:var(--text-light);font-size:0.9rem">Aucun spot trouvé</div>` :
+      filtered.map(s => `
+        <div class="spot-item${s.id===selectedSpotId?' selected':''}" data-id="${s.id}" onclick="selectSpot(${s.id})">
+          <div class="spot-thumb ${colors[s.type]}">${s.emoji}</div>
+          <div class="spot-info">
+            <div class="spot-name">${s.name}</div>
+            <div class="spot-meta">📍 ${s.loc}</div>
+            <div class="spot-tags">
+              <span class="tag tag-note">⭐ ${s.note}</span>
+              ${s.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+            </div>
+          </div>
+        </div>`).join('');
+  }
+
+  renderSidebar();
+
+  // Filtres
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeFilter = chip.dataset.filter;
+      renderSidebar(activeFilter, document.getElementById('searchInput').value);
+    });
+  });
+
+  // Search
+  document.getElementById('searchInput').addEventListener('input', e => {
+    renderSidebar(activeFilter, e.target.value);
+  });
+
+  // Localisation
+  document.getElementById('locateBtn').addEventListener('click', () => {
+    if (!navigator.geolocation) return showToast('Géolocalisation non disponible');
+    showToast('📍 Localisation en cours…');
+    navigator.geolocation.getCurrentPosition(pos => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      map.flyTo([lat, lng], 13, { animate: true, duration: 1.5 });
+      L.circle([lat, lng], { radius: 200, color: '#C1714F', fillColor: '#E8A882', fillOpacity: 0.25 }).addTo(map);
+      L.marker([lat, lng], { icon: L.divIcon({ html:'<div style="background:#C1714F;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>', iconSize:[16,16], iconAnchor:[8,8], className:'' }) }).addTo(map).bindPopup('📍 Vous êtes ici').openPopup();
+      showToast('✅ Position trouvée !');
+    }, () => showToast('❌ Accès à la position refusé'));
+  });
+
+  // Modal ajout spot
+  const modal = document.getElementById('modalOverlay');
+  document.getElementById('addSpotBtn').addEventListener('click', () => modal.classList.add('open'));
+  document.getElementById('modalClose').addEventListener('click', () => modal.classList.remove('open'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+  // Clic sur carte → coordonnées auto dans le form
+  map.on('click', e => {
+    if (modal.classList.contains('open')) {
+      document.getElementById('spotLat').value = e.latlng.lat.toFixed(5);
+      document.getElementById('spotLng').value = e.latlng.lng.toFixed(5);
+      showToast('📍 Coordonnées saisies !');
+    }
+  });
+
+  // Soumission spot
+  document.getElementById('submitSpot').addEventListener('click', () => {
+    const name = document.getElementById('spotNameInput').value.trim();
+    const lat = parseFloat(document.getElementById('spotLat').value);
+    const lng = parseFloat(document.getElementById('spotLng').value);
+    const type = document.getElementById('spotTypeInput').value;
+    const region = document.getElementById('spotRegionInput').value.trim() || 'France';
+    const desc = document.getElementById('spotDescInput').value.trim();
+    const emojis = { foret:'🌲', montagne:'⛰️', riviere:'💧', plage:'🏖️', prairie:'🌾' };
+    if (!name) return showToast('❌ Donne un nom à ton spot !');
+    if (isNaN(lat) || isNaN(lng)) return showToast('❌ Clique sur la carte pour les coordonnées');
+    const newSpot = { id: SPOTS.length + 1, name, loc: region, type, emoji: emojis[type], note: '✦ Nouveau', lat, lng, desc: desc || 'Nouveau spot communautaire.', tags:['Nouveau'] };
+    SPOTS.push(newSpot);
+    const marker = L.marker([lat, lng], { icon: makeIcon(emojis[type]) }).addTo(map).bindPopup(popupHTML(newSpot), { className:'custom-popup', maxWidth:220 });
+    marker.on('click', () => selectSpot(newSpot.id));
+    markers[newSpot.id] = marker;
+    renderSidebar(activeFilter, document.getElementById('searchInput').value);
+    modal.classList.remove('open');
+    showToast('🌿 Spot proposé avec succès !');
+    map.flyTo([lat, lng], 13);
+  });
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // Nav toggle
+  document.getElementById('navToggle').addEventListener('click', () => {
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+</script>
+</body>
+</html>

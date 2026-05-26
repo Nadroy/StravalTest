@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>STRAVAL — Explorer les spots</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --terra: #C1714F; --terra-dark: #9B5A3A; --terra-light: #E8A882;
+      --green: #4C6A3C; --green-light: #7A9A65;
+      --cream: #F5EDE0; --cream-dark: #E8D9C0;
+      --text: #2C2015; --text-light: #6B5744; --white: #FFFDF8;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--text); }
+
+    /* HEADER */
+    header { position: sticky; top: 0; z-index: 100; background: rgba(245,237,224,0.97); backdrop-filter: blur(10px); border-bottom: 1px solid var(--cream-dark); padding: 0 2rem; }
+    nav { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .logo { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; }
+    .logo-icon { width: 34px; height: 34px; }
+    .logo-text { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--terra-dark); letter-spacing: 0.05em; }
+    .logo-text span { color: var(--green); }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+    .nav-links a { text-decoration: none; font-size: 0.9rem; font-weight: 500; color: var(--text-light); transition: color 0.2s; }
+    .nav-links a:hover, .nav-links a.active { color: var(--terra); }
+    .btn-nav { background: var(--terra); color: var(--white) !important; padding: 0.45rem 1.1rem; border-radius: 2rem; }
+    .btn-nav:hover { background: var(--terra-dark) !important; }
+    .nav-toggle { display: none; background: none; border: none; cursor: pointer; flex-direction: column; gap: 5px; }
+    .nav-toggle span { display: block; width: 25px; height: 2px; background: var(--text); border-radius: 2px; }
+
+    /* HERO SPOTS */
+    .spots-hero { background: linear-gradient(135deg, #2C1A0E 0%, #4C6A3C 100%); padding: 3.5rem 2rem; text-align: center; }
+    .spots-hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 700; color: var(--white); margin-bottom: 0.6rem; }
+    .spots-hero p { font-size: 1rem; color: rgba(255,253,248,0.7); font-weight: 300; max-width: 500px; margin: 0 auto 1.8rem; }
+    .hero-search { display: flex; gap: 0.7rem; max-width: 520px; margin: 0 auto; }
+    .hero-search input { flex: 1; padding: 0.75rem 1.2rem; border-radius: 3rem; border: none; font-size: 0.95rem; background: rgba(255,253,248,0.12); color: var(--white); outline: none; font-family: 'Inter', sans-serif; backdrop-filter: blur(6px); border: 1.5px solid rgba(255,253,248,0.2); }
+    .hero-search input::placeholder { color: rgba(255,253,248,0.5); }
+    .hero-search input:focus { border-color: var(--terra-light); }
+    .hero-search button { background: var(--terra); color: white; border: none; padding: 0.75rem 1.4rem; border-radius: 3rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 0.9rem; transition: background 0.2s; }
+    .hero-search button:hover { background: var(--terra-dark); }
+
+    /* TOOLBAR */
+    .toolbar { background: var(--white); border-bottom: 1px solid var(--cream-dark); padding: 0 2rem; position: sticky; top: 64px; z-index: 90; }
+    .toolbar-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.8rem 0; flex-wrap: wrap; }
+    .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .filter-chip { background: var(--cream); border: 1.5px solid var(--cream-dark); color: var(--text-light); padding: 0.35rem 0.9rem; border-radius: 2rem; font-size: 0.82rem; font-weight: 500; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .filter-chip:hover { border-color: var(--terra); color: var(--terra); }
+    .filter-chip.active { background: var(--terra); border-color: var(--terra); color: white; }
+    .sort-select { padding: 0.35rem 0.9rem; border: 1.5px solid var(--cream-dark); border-radius: 2rem; font-size: 0.82rem; background: var(--cream); color: var(--text-light); outline: none; font-family: 'Inter', sans-serif; cursor: pointer; }
+    .results-count { font-size: 0.85rem; color: var(--text-light); white-space: nowrap; }
+
+    /* GRILLE */
+    .spots-section { max-width: 1200px; margin: 0 auto; padding: 2.5rem 2rem; }
+    .spots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 1.8rem; }
+
+    /* CARTE SPOT */
+    .spot-card { background: var(--white); border-radius: 1.5rem; overflow: hidden; border: 1px solid var(--cream-dark); transition: transform 0.25s, box-shadow 0.25s; cursor: pointer; }
+    .spot-card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(44,32,21,0.12); }
+    .spot-img { height: 190px; position: relative; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; }
+    .foret { background: linear-gradient(135deg, #2d4a1e, #4C6A3C); }
+    .montagne { background: linear-gradient(135deg, #3a3025, #6b5a45); }
+    .riviere { background: linear-gradient(135deg, #1a3a4a, #2a7a8a); }
+    .plage { background: linear-gradient(135deg, #8B6914, #c4a43a); }
+    .prairie { background: linear-gradient(135deg, #3a5a1a, #7aaa3a); }
+    .spot-type-badge { position: absolute; top: 1rem; left: 1rem; background: rgba(0,0,0,0.4); color: white; font-size: 0.75rem; font-weight: 500; padding: 0.3rem 0.8rem; border-radius: 2rem; backdrop-filter: blur(6px); }
+    .spot-save { position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.3); color: white; border: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 1rem; backdrop-filter: blur(6px); transition: background 0.2s; display: flex; align-items: center; justify-content: center; }
+    .spot-save:hover, .spot-save.saved { background: var(--terra); }
+    .spot-body { padding: 1.3rem 1.4rem 1.4rem; }
+    .spot-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem; }
+    .spot-name { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 600; color: var(--text); }
+    .spot-note { display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; font-weight: 700; color: var(--terra); white-space: nowrap; }
+    .spot-loc { font-size: 0.83rem; color: var(--text-light); margin-bottom: 0.7rem; }
+    .spot-desc {
+    font-size: 0.88rem;
+    color: var(--text-light);
+    font-weight: 300;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;
+    overflow: hidden;
+}    .spot-footer { display: flex; align-items: center; justify-content: space-between; }
+    .spot-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .tag { background: var(--cream); color: var(--text-light); font-size: 0.72rem; padding: 0.2rem 0.65rem; border-radius: 1rem; font-weight: 500; }
+    .btn-spot { background: var(--green); color: white; padding: 0.45rem 1.1rem; border-radius: 2rem; border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.2s; }
+    .btn-spot:hover { background: var(--green-light); }
+
+    /* EMPTY STATE */
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-light); }
+    .empty-state .emoji { font-size: 3.5rem; margin-bottom: 1rem; }
+    .empty-state h3 { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--text); margin-bottom: 0.5rem; }
+
+    /* MODAL DÉTAIL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(44,32,21,0.55); z-index: 2000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(5px); }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal { background: var(--white); border-radius: 2rem; width: 90%; max-width: 560px; max-height: 90vh; overflow-y: auto; transform: translateY(24px); transition: transform 0.3s; }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-img { height: 200px; display: flex; align-items: center; justify-content: center; font-size: 5rem; border-radius: 2rem 2rem 0 0; position: relative; }
+    .modal-close { position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.3); color: white; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 1rem; backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; }
+    .modal-body { padding: 1.8rem 2rem 2rem; }
+    .modal-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+    .modal-name { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; color: var(--text); }
+    .modal-note { font-size: 1rem; font-weight: 700; color: var(--terra); }
+    .modal-loc { font-size: 0.9rem; color: var(--text-light); margin-bottom: 1rem; }
+    .modal-desc { font-size: 0.95rem; color: var(--text-light); line-height: 1.8; font-weight: 300; margin-bottom: 1.5rem; }
+    .modal-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.8rem; }
+    .modal-tag { background: var(--cream); color: var(--text-light); font-size: 0.82rem; padding: 0.3rem 0.85rem; border-radius: 2rem; font-weight: 500; }
+    .modal-actions { display: flex; gap: 0.8rem; }
+    .btn-primary { flex: 1; padding: 0.85rem; background: var(--terra); color: white; border: none; border-radius: 1rem; font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-primary:hover { background: var(--terra-dark); }
+    .btn-outline { flex: 1; padding: 0.85rem; background: transparent; color: var(--green); border: 1.5px solid var(--green); border-radius: 1rem; font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-outline:hover { background: var(--green); color: white; }
+
+    /* RATING SECTION */
+    .rating-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--cream-dark); }
+    .rating-title { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 1rem; }
+    .stars-input { display: flex; gap: 0.4rem; margin-bottom: 1rem; }
+    .star-btn { background: none; border: none; font-size: 1.8rem; cursor: pointer; color: var(--cream-dark); transition: color 0.15s, transform 0.15s; }
+    .star-btn:hover, .star-btn.active { color: #D4891A; transform: scale(1.15); }
+    .rating-comment { width: 100%; padding: 0.65rem 0.9rem; border: 1.5px solid var(--cream-dark); border-radius: 0.8rem; font-size: 0.88rem; background: var(--cream); color: var(--text); outline: none; font-family: 'Inter', sans-serif; resize: none; min-height: 70px; transition: border-color 0.2s; }
+    .rating-comment:focus { border-color: var(--terra); }
+    .btn-rate { margin-top: 0.7rem; width: 100%; padding: 0.75rem; background: var(--green); color: white; border: none; border-radius: 0.8rem; font-family: 'Inter', sans-serif; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn-rate:hover { background: var(--green-light); }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--green); color: white; padding: 0.8rem 1.6rem; border-radius: 2rem; font-size: 0.9rem; font-weight: 500; z-index: 3000; transition: transform 0.4s ease; box-shadow: 0 4px 20px rgba(44,32,21,0.2); }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ANIMATIONS */
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-links.open { display: flex; flex-direction: column; position: absolute; top: 64px; left: 0; right: 0; background: var(--cream); padding: 1rem 2rem; border-bottom: 1px solid var(--cream-dark); z-index: 999; }
+      .nav-toggle { display: flex; }
+      .modal-body { padding: 1.2rem 1.4rem 1.6rem; }
+      .modal-actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a href="index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 38 38" fill="none">
+        <circle cx="19" cy="19" r="19" fill="#4C6A3C" opacity="0.15"/>
+        <path d="M19 6 C12 10, 8 17, 11 24 C14 30, 22 32, 27 27 C32 22, 30 12, 19 6Z" fill="#4C6A3C"/>
+        <path d="M19 6 L17 26" stroke="#F5EDE0" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M19 14 C17 17, 16 20, 19 22 C22 20, 21 17, 19 14Z" fill="#C1714F"/>
+      </svg>
+      <span class="logo-text">STRA<span>VAL</span></span>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="map.html">Carte</a></li>
+      <li><a href="spots.html" class="active">Spots</a></li>
+      <li><a href="login.html" class="btn-nav">Connexion</a></li>
+    </ul>
+    <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
+  </nav>
+</header>
+
+<div class="spots-hero">
+  <h1>Explorer les spots 🌿</h1>
+  <p>Découvre les lieux sauvages créés et notés par la communauté STRAVAL.</p>
+  <div class="hero-search">
+    <input type="text" id="heroSearch" placeholder="Forêt, rivière, montagne…"/>
+    <button onclick="applySearch()">Rechercher</button>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <div class="filters">
+      <div class="filter-chip active" data-filter="all">Tous</div>
+      <div class="filter-chip" data-filter="foret">🌲 Forêt</div>
+      <div class="filter-chip" data-filter="montagne">⛰️ Montagne</div>
+      <div class="filter-chip" data-filter="riviere">💧 Rivière</div>
+      <div class="filter-chip" data-filter="plage">🏖️ Plage</div>
+      <div class="filter-chip" data-filter="prairie">🌾 Prairie</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <span class="results-count" id="resultsCount">8 spots</span>
+      <select class="sort-select" id="sortSelect">
+        <option value="note">⭐ Mieux notés</option>
+        <option value="name">🔤 Alphabétique</option>
+        <option value="new">🆕 Plus récents</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="spots-section">
+  <div class="spots-grid" id="spotsGrid"></div>
+</div>
+
+<!-- Modal détail -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SPOTS = [
+    { id:1, name:"Clairière des Vents", loc:"Fontainebleau, Île-de-France", type:"foret", emoji:"🌲", note:4.9, desc:"Une clairière lumineuse au cœur de la forêt de Fontainebleau. Idéale pour méditer au lever du soleil. Le silence y est absolu, brisé seulement par le chant des oiseaux.", tags:["Méditation","Balade","Silence"], saved:false },
+    { id:2, name:"Crête des Soupirs", loc:"Vercors, Auvergne-Rhône-Alpes", type:"montagne", emoji:"⛰️", note:4.6, desc:"Un panorama époustouflant sur les Alpes depuis cette crête sauvage. Le vent y souffle fort, mais la vue récompense chaque effort.", tags:["Randonnée","Vue panoramique","Effort"], saved:false },
+    { id:3, name:"Méandre Sauvage", loc:"Ardèche, Occitanie", type:"riviere", emoji:"🏞️", note:4.8, desc:"L'Ardèche dans sa forme la plus sauvage. Baignade et contemplation garanties dans des eaux cristallines entourées de falaises calcaires.", tags:["Baignade","Nature","Falaises"], saved:false },
+    { id:4, name:"Dunes du Silence", loc:"Landes, Nouvelle-Aquitaine", type:"plage", emoji:"🏖️", note:4.5, desc:"Des dunes immenses battues par l'Atlantique. Un endroit hors du temps où le sable et le vent sculpturent des paysages mouvants.", tags:["Surf","Coucher de soleil","Vent"], saved:false },
+    { id:5, name:"Prairie des Lucioles", loc:"Corrèze, Nouvelle-Aquitaine", type:"prairie", emoji:"🌾", note:4.7, desc:"En été, cette prairie s'illumine de lucioles au crépuscule. Un spectacle naturel magique qui laisse sans voix.", tags:["Photographie","Soirée","Magie"], saved:false },
+    { id:6, name:"Cascade de Mouthe", loc:"Doubs, Bourgogne-Franche-Comté", type:"riviere", emoji:"💧", note:4.9, desc:"La source du Doubs jaillit dans un cirque naturel d'une beauté rare. L'eau y est pure et froide, la végétation luxuriante.", tags:["Randonnée","Eau","Fraîcheur"], saved:false },
+    { id:7, name:"Bois du Cerf", loc:"Sologne, Centre-Val de Loire", type:"foret", emoji:"🌲", note:4.4, desc:"Forêt dense et mystérieuse, habitat naturel des cerfs de Sologne. À l'automne, le brame résonne dans les sous-bois dorés.", tags:["Faune","Silence","Automne"], saved:false },
+    { id:8, name:"Col des Nuages", loc:"Pyrénées, Occitanie", type:"montagne", emoji:"⛰️", note:4.8, desc:"À 2300m d'altitude, les nuages se forment sous vos pieds. Une expérience unique de marcher au-dessus des vallées brumeuses.", tags:["Altitude","Contemplation","Brume"], saved:false },
+  ];
+
+  let activeFilter = 'all';
+  let searchQuery = '';
+  let sortBy = 'note';
+  let currentSpot = null;
+  let selectedStars = 0;
+
+  function getFiltered() {
+    let res = SPOTS.filter(s =>
+      (activeFilter === 'all' || s.type === activeFilter) &&
+      (searchQuery === '' || s.name.toLowerCase().includes(searchQuery) || s.loc.toLowerCase().includes(searchQuery) || s.tags.some(t => t.toLowerCase().includes(searchQuery)))
+    );
+    if (sortBy === 'note') res.sort((a,b) => b.note - a.note);
+    else if (sortBy === 'name') res.sort((a,b) => a.name.localeCompare(b.name));
+    return res;
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById('spotsGrid');
+    const filtered = getFiltered();
+    document.getElementById('resultsCount').textContent = `${filtered.length} spot${filtered.length > 1 ? 's' : ''}`;
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="emoji">🌿</div><h3>Aucun spot trouvé</h3><p>Essaie un autre filtre ou une autre recherche.</p></div>`;
+      return;
+    }
+    grid.innerHTML = filtered.map(s => `
+      <div class="spot-card reveal" onclick="openModal(${s.id})">
+        <div class="spot-img ${s.type}">
+          ${s.emoji}
+          <span class="spot-type-badge">${typeName(s.type)}</span>
+          <button class="spot-save${s.saved?' saved':''}" onclick="toggleSave(event,${s.id})" title="Sauvegarder">${s.saved?'❤️':'🤍'}</button>
+        </div>
+        <div class="spot-body">
+          <div class="spot-header">
+            <div class="spot-name">${s.name}</div>
+            <div class="spot-note">⭐ ${s.note}</div>
+          </div>
+          <div class="spot-loc">📍 ${s.loc}</div>
+          <div class="spot-desc">${s.desc}</div>
+          <div class="spot-footer">
+            <div class="spot-tags">${s.tags.slice(0,2).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+            <button class="btn-spot">Voir →</button>
+          </div>
+        </div>
+      </div>`).join('');
+    // Reveal animation
+    setTimeout(() => document.querySelectorAll('.spot-card.reveal').forEach(el => el.classList.add('visible')), 50);
+  }
+
+  function typeName(t) {
+    return { foret:'🌲 Forêt', montagne:'⛰️ Montagne', riviere:'💧 Rivière', plage:'🏖️ Plage', prairie:'🌾 Prairie' }[t] || t;
+  }
+
+  function toggleSave(e, id) {
+    e.stopPropagation();
+    const s = SPOTS.find(s => s.id === id);
+    s.saved = !s.saved;
+    renderGrid();
+    showToast(s.saved ? '❤️ Spot sauvegardé !' : '🤍 Retiré des favoris');
+  }
+
+  function openModal(id) {
+    currentSpot = SPOTS.find(s => s.id === id);
+    selectedStars = 0;
+    const modal = document.getElementById('modalContent');
+    modal.innerHTML = `
+      <div class="modal-img ${currentSpot.type}">
+        ${currentSpot.emoji}
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-meta">
+          <div class="modal-name">${currentSpot.name}</div>
+          <div class="modal-note">⭐ ${currentSpot.note}</div>
+        </div>
+        <div class="modal-loc">📍 ${currentSpot.loc} · ${typeName(currentSpot.type)}</div>
+        <div class="modal-desc">${currentSpot.desc}</div>
+        <div class="modal-tags">${currentSpot.tags.map(t=>`<span class="modal-tag">${t}</span>`).join('')}</div>
+        <div class="modal-actions">
+          <button class="btn-primary" onclick="goToMap(${currentSpot.id})">🗺️ Voir sur la carte</button>
+          <button class="btn-outline" onclick="toggleSaveModal(${currentSpot.id})">${currentSpot.saved?'❤️ Sauvegardé':'🤍 Sauvegarder'}</button>
+        </div>
+        <div class="rating-section">
+          <div class="rating-title">⭐ Notez ce spot</div>
+          <div class="stars-input" id="starsInput">
+            ${[1,2,3,4,5].map(i=>`<button class="star-btn" data-val="${i}" onclick="selectStar(${i})">★</button>`).join('')}
+          </div>
+          <textarea class="rating-comment" id="ratingComment" placeholder="Un mot sur ce lieu… (optionnel)"></textarea>
+          <button class="btn-rate" onclick="submitRating()">Valider ma note 🌿</button>
+          <p style="font-size:0.8rem;color:var(--text-light);margin-top:0.6rem;text-align:center"><a href="login.html" style="color:var(--terra);font-weight:500">Connecte-toi</a> pour que ta note soit prise en compte.</p>
+        </div>
+      </div>`;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+
+  function goToMap(id) {
+    window.location.href = `map.html#spot-${id}`;
+  }
+
+  function toggleSaveModal(id) {
+    const s = SPOTS.find(s => s.id === id);
+    s.saved = !s.saved;
+    showToast(s.saved ? '❤️ Spot sauvegardé !' : '🤍 Retiré des favoris');
+    openModal(id);
+  }
+
+  function selectStar(val) {
+    selectedStars = val;
+    document.querySelectorAll('.star-btn').forEach(btn => {
+      btn.classList.toggle('active', parseInt(btn.dataset.val) <= val);
+    });
+  }
+
+  function submitRating() {
+    if (selectedStars === 0) return showToast('❌ Sélectionne une note d\'abord !');
+    showToast(`⭐ Note de ${selectedStars}/5 envoyée — Merci !`);
+    closeModal();
+  }
+
+  function applySearch() {
+    searchQuery = document.getElementById('heroSearch').value.toLowerCase().trim();
+    renderGrid();
+  }
+
+  document.getElementById('heroSearch').addEventListener('keydown', e => {
+    if (e.key === 'Enter') applySearch();
+  });
+
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeFilter = chip.dataset.filter;
+      renderGrid();
+    });
+  });
+
+  document.getElementById('sortSelect').addEventListener('change', e => {
+    sortBy = e.target.value;
+    renderGrid();
+  });
+
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  });
+
+  document.getElementById('navToggle').addEventListener('click', () => {
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  renderGrid();
+</script>
+</body>
+</html>
