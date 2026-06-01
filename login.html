@@ -6,6 +6,8 @@
   <title>STRAVAL — Connexion</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <style>
     :root {
       --terra: #C1714F; --terra-dark: #9B5A3A; --terra-light: #E8A882;
@@ -117,18 +119,44 @@
     .dash-name { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--text); }
     .dash-sub { font-size: 0.88rem; color: var(--text-light); font-weight: 300; }
     .dash-rating { display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(193,113,79,0.1); color: var(--terra-dark); padding: 0.35rem 1rem; border-radius: 2rem; font-size: 0.9rem; font-weight: 700; margin-top: 0.6rem; }
-    .dash-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.8rem; margin-bottom: 1.5rem; }
-    .dash-stat { background: var(--cream); border-radius: 1rem; padding: 1rem; text-align: center; }
-    .dash-stat-num { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; color: var(--terra); }
-    .dash-stat-label { font-size: 0.75rem; color: var(--text-light); font-weight: 300; margin-top: 0.2rem; }
-    .dash-actions { display: flex; flex-direction: column; gap: 0.7rem; }
-    .dash-btn { padding: 0.8rem 1.2rem; border-radius: 1rem; font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; text-align: left; display: flex; align-items: center; gap: 0.7rem; transition: all 0.2s; }
+    .dashboard { display: none; animation: fadeIn 0.4s ease; background: rgba(255,255,255,0.94); border: 1px solid rgba(76,106,60,0.12); border-radius: 1.8rem; box-shadow: 0 30px 60px rgba(44,32,21,0.08); padding: 2rem; }
+    .dashboard.active { display: block; }
+    .dash-header { text-align: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(76,106,60,0.12); }
+    .dash-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #C1714F, #9B5A3A); display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; color: white; margin: 0 auto 1rem; font-family: 'Playfair Display', serif; }
+    .dash-name { font-family: 'Playfair Display', serif; font-size: 1.55rem; font-weight: 700; color: var(--text); }
+    .dash-sub { font-size: 0.95rem; color: var(--text-light); font-weight: 300; margin-top: 0.4rem; }
+    .dash-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.8rem; }
+    .dash-stat { background: linear-gradient(180deg, rgba(76,106,60,0.08), rgba(255,255,255,0.95)); border: 1px solid rgba(76,106,60,0.14); border-radius: 1.2rem; padding: 1.25rem 1rem; text-align: center; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35); }
+    .dash-stat-num { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: var(--terra); }
+    .dash-stat-label { font-size: 0.9rem; color: var(--text-light); font-weight: 500; margin-top: 0.35rem; letter-spacing: 0.02em; }
+    .dash-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 1.5rem; }
+    .dash-btn { padding: 0.95rem 1.1rem; border-radius: 1.1rem; font-family: 'Inter', sans-serif; font-size: 0.92rem; font-weight: 700; cursor: pointer; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s; }
     .dash-btn-primary { background: var(--terra); color: white; }
     .dash-btn-primary:hover { background: var(--terra-dark); }
-    .dash-btn-secondary { background: var(--cream); color: var(--text); }
-    .dash-btn-secondary:hover { background: var(--cream-dark); }
+    .dash-btn-secondary { background: #F6F1EA; color: var(--text); border: 1px solid rgba(76,106,60,0.14); }
+    .dash-btn-secondary:hover { background: #E8D9C0; }
     .dash-btn-danger { background: transparent; color: #C14F4F; border: 1.5px solid #C14F4F; }
     .dash-btn-danger:hover { background: #C14F4F; color: white; }
+    .track-panel { background: #F8F3EB; border: 1px solid rgba(76,106,60,0.12); border-radius: 1.4rem; padding: 1.4rem; }
+    .track-header { margin-bottom: 1rem; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+    .section-sub { font-size: 0.92rem; color: var(--text-light); line-height: 1.6; }
+    .track-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.9rem; margin-bottom: 1.25rem; }
+    .track-card { background: white; border-radius: 1.2rem; padding: 1.1rem 1rem; box-shadow: 0 10px 20px rgba(76,106,60,0.05); }
+    .track-card-num { font-size: 1.6rem; font-weight: 700; color: var(--green); margin-bottom: 0.35rem; }
+    .track-card-label { font-size: 0.88rem; color: var(--text-light); }
+    .track-form { display: grid; gap: 0.9rem; margin-bottom: 1rem; }
+    .track-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+    .track-input { width: 100%; padding: 0.88rem 1rem; border: 1px solid rgba(76,106,60,0.16); border-radius: 0.95rem; font-size: 0.95rem; background: white; color: var(--text); outline: none; }
+    .track-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(76,106,60,0.08); }
+    .track-add-btn { width: 100%; padding: 0.95rem 1rem; border-radius: 1rem; background: var(--green); color: white; border: none; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .track-add-btn:hover { background: var(--green-light); }
+    .track-list { max-height: 210px; overflow-y: auto; background: #ffffff; border-radius: 1rem; border: 1px solid rgba(76,106,60,0.1); padding: 0.95rem; }
+    .track-empty { color: var(--text-light); font-size: 0.92rem; text-align: center; padding: 1.5rem 0; }
+    .track-entry { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.85rem 0; border-bottom: 1px solid rgba(76,106,60,0.08); }
+    .track-entry:last-child { border-bottom: none; }
+    .track-entry-date { font-weight: 700; color: var(--text); margin-bottom: 0.2rem; }
+    .track-entry-meta { font-size: 0.85rem; color: var(--text-light); line-height: 1.4; }
 
     /* TOAST */
     .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--green); color: white; padding: 0.8rem 1.6rem; border-radius: 2rem; font-size: 0.9rem; font-weight: 500; z-index: 3000; transition: transform 0.4s ease; box-shadow: 0 4px 20px rgba(44,32,21,0.2); }
@@ -214,6 +242,35 @@
           <button class="dash-btn dash-btn-secondary" onclick="window.location.href='spots.html'">🌿 Voir les spots</button>
           <button class="dash-btn dash-btn-secondary" onclick="editProfile()">✏️ Modifier mon profil</button>
           <button class="dash-btn dash-btn-danger" onclick="logout()">↩ Se déconnecter</button>
+        </div>
+        <div class="track-panel">
+          <div class="track-header">
+            <div class="section-title">Suivi de tes sorties</div>
+            <div class="section-sub">Enregistre chaque sortie pour suivre tes kilomètres, temps et vitesses.</div>
+          </div>
+          <div class="track-grid">
+            <div class="track-card">
+              <div class="track-card-num" id="trackKm">0 km</div>
+              <div class="track-card-label">Kilomètres totaux</div>
+            </div>
+            <div class="track-card">
+              <div class="track-card-num" id="trackAvg">0 km/h</div>
+              <div class="track-card-label">Vitesse moyenne</div>
+            </div>
+            <div class="track-card">
+              <div class="track-card-num" id="trackMax">0 km/h</div>
+              <div class="track-card-label">Vitesse max</div>
+            </div>
+            <div class="track-card">
+              <div class="track-card-num" id="trackTime">0h 00m</div>
+              <div class="track-card-label">Temps total</div>
+            </div>
+          </div>
+          <div class="track-form">
+            <div style="padding:0.9rem;background:#FAF9F7;border-radius:0.9rem;color:var(--text-light);font-size:0.95rem;">
+              L'ajout manuel de sorties a été désactivé. Utilise le suivi GPS depuis la carte (`map.html`) pour enregistrer automatiquement tes sorties.
+            </div>
+          </div>
         </div>
       </div>
 
@@ -304,6 +361,11 @@
             <div class="guest-icon">🌿</div>
             <div class="guest-title">Mode invité</div>
             <div class="guest-desc">Explore STRAVAL sans créer de compte. Tu pourras toujours t'inscrire plus tard pour accéder à toutes les fonctionnalités.</div>
+            <div class="form-group">
+              <label class="form-label" for="guestPseudoInput">Pseudo invité</label>
+              <input type="text" class="form-input" id="guestPseudoInput" placeholder="Ton pseudo (ex: RandoMax)" />
+            </div>
+            <div id="guestConnectedInfo" class="guest-info" style="font-size:0.86rem;color:var(--text-light);margin-bottom:0.8rem;display:none"></div>
             <div class="guest-features">
               <div class="guest-feature"><span class="feat-ok">✓</span> Voir la carte et les spots</div>
               <div class="guest-feature"><span class="feat-ok">✓</span> Rechercher par type et région</div>
@@ -327,17 +389,83 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  // Données mock utilisateurs
-  const MOCK_USERS = [
-    { email:'demo@straval.app', password:'straval2025', first:'Norberto', last:'S', rating:4.8, spots:3, sorties:7, avis:12 },
-    { email:'marie@straval.app', password:'nature123', first:'Marie', last:'L', rating:4.9, spots:12, sorties:8, avis:31 },
-  ];
+  // Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDNEN6s846Wz_83mAtTJwGk6-IO-JJnsHE",
+    authDomain: "straval-cf824.firebaseapp.com",
+    projectId: "straval-cf824",
+    storageBucket: "straval-cf824.firebasestorage.app",
+    messagingSenderId: "25642703432",
+    appId: "1:25642703432:web:0253d688f586d8c29c967d"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
 
-  let currentUser = JSON.parse(sessionStorage.getItem('straval_user') || 'null');
+  let currentUser = null;
+  let currentProfile = null;
 
-  // Afficher dashboard si déjà connecté
-  window.addEventListener('DOMContentLoaded', () => {
-    if (currentUser) showDashboard(currentUser);
+  function getProfileKey(uid) {
+    return `straval_profile_${uid}`;
+  }
+
+  function loadProfile(uid) {
+    const saved = JSON.parse(localStorage.getItem(getProfileKey(uid)) || 'null');
+    return saved || { spots: 0, sorties: 0, avis: 0, rating: null };
+  }
+
+  function saveProfile(uid, profile) {
+    localStorage.setItem(getProfileKey(uid), JSON.stringify(profile));
+  }
+
+  function getGuestUserKey() {
+    return 'straval_guest_user';
+  }
+
+  function loadGuestUser() {
+    return JSON.parse(localStorage.getItem(getGuestUserKey()) || 'null');
+  }
+
+  function saveGuestUser(user) {
+    localStorage.setItem(getGuestUserKey(), JSON.stringify(user));
+  }
+
+  function showGuestStatus() {
+    const guest = loadGuestUser();
+    const info = document.getElementById('guestConnectedInfo');
+    if (!guest) {
+      info.style.display = 'none';
+      return;
+    }
+    info.textContent = `Connecté en invité : ${guest.displayName}. Tes données sont enregistrées localement.`;
+    info.style.display = 'block';
+    document.getElementById('guestPseudoInput').value = guest.displayName;
+    if (!auth.currentUser) {
+      currentUser = { uid: 'guest', displayName: guest.displayName, email: guest.email };
+      currentProfile = loadProfile('guest');
+      showDashboard(currentUser);
+    }
+  }
+
+  showGuestStatus();
+
+  // Afficher dashboard si déjà connecté via Firebase ou en invité
+  auth.onAuthStateChanged(user => {
+    const guest = loadGuestUser();
+    if (user) {
+      currentUser = user;
+      currentProfile = loadProfile(user.uid);
+      showDashboard(user);
+    } else if (guest) {
+      currentUser = { uid: 'guest', displayName: guest.displayName, email: guest.email };
+      currentProfile = loadProfile('guest');
+      showDashboard(currentUser);
+    } else {
+      currentUser = null;
+      currentProfile = null;
+      document.getElementById('dashboard').classList.remove('active');
+      document.getElementById('authForms').style.display = 'block';
+      switchTab('login');
+    }
   });
 
   function switchTab(tab) {
@@ -358,6 +486,10 @@
     if (inputId) document.getElementById(inputId).classList.add('error');
   }
 
+  document.addEventListener('DOMContentLoaded', () => {
+    showGuestStatus();
+  });
+
   // CONNEXION
   function submitLogin() {
     clearErrors();
@@ -367,22 +499,21 @@
     if (!email || !email.includes('@')) { showError('loginEmailErr','loginEmail'); valid = false; }
     if (!pw) { showError('loginPwErr','loginPw'); valid = false; }
     if (!valid) return;
-    const user = MOCK_USERS.find(u => u.email === email && u.password === pw);
-    if (!user) {
-      showError('loginEmailErr','loginEmail');
-      document.getElementById('loginEmailErr').textContent = 'Email ou mot de passe incorrect';
-      return;
-    }
-    sessionStorage.setItem('straval_user', JSON.stringify(user));
-    currentUser = user;
-    showToast(`🌿 Bienvenue ${user.first} !`);
-    setTimeout(() => showDashboard(user), 800);
+    auth.signInWithEmailAndPassword(email, pw)
+      .then(({ user }) => {
+        showToast(`🌿 Bienvenue ${user.displayName || user.email} !`);
+      })
+      .catch(err => {
+        showError('loginEmailErr','loginEmail');
+        document.getElementById('loginEmailErr').textContent = err.message.includes('password') ? 'Mot de passe incorrect' : 'Email ou mot de passe incorrect';
+      });
   }
 
   // INSCRIPTION
   function submitRegister() {
     clearErrors();
     const first = document.getElementById('regFirst').value.trim();
+    const last = document.getElementById('regLast').value.trim();
     const email = document.getElementById('regEmail').value.trim();
     const pw = document.getElementById('regPw').value;
     const pwConfirm = document.getElementById('regPwConfirm').value;
@@ -394,16 +525,32 @@
     if (pw !== pwConfirm) { showError('regPwConfirmErr','regPwConfirm'); valid = false; }
     if (!cgu) { showError('cguErr'); valid = false; }
     if (!valid) return;
-    const newUser = { email, first, last: document.getElementById('regLast').value.trim(), rating: null, spots:0, sorties:0, avis:0 };
-    sessionStorage.setItem('straval_user', JSON.stringify(newUser));
-    currentUser = newUser;
-    showToast(`🌱 Compte créé ! Bienvenue ${first} !`);
-    setTimeout(() => showDashboard(newUser), 800);
+    auth.createUserWithEmailAndPassword(email, pw)
+      .then(({ user }) => {
+        const displayName = `${first} ${last}`.trim();
+        return user.updateProfile({ displayName }).then(() => {
+          currentProfile = { spots: 0, sorties: 0, avis: 0, rating: null };
+          saveProfile(user.uid, currentProfile);
+          showToast(`🌱 Compte créé ! Bienvenue ${displayName} !`);
+        });
+      })
+      .catch(err => {
+        showError('regEmailErr','regEmail');
+        document.getElementById('regEmailErr').textContent = err.message;
+      });
   }
 
   // INVITÉ
   function continueAsGuest() {
-    showToast('🌿 Bienvenue en mode invité !');
+    const pseudo = document.getElementById('guestPseudoInput').value.trim() || 'Invité';
+    const guest = {
+      uid: 'guest',
+      displayName: pseudo,
+      email: 'guest@straval.local',
+      createdAt: Date.now()
+    };
+    saveGuestUser(guest);
+    showToast(`🌿 Connecté en invité : ${pseudo}. Tes données seront stockées localement sur ton appareil.`);
     setTimeout(() => window.location.href = 'map.html', 1000);
   }
 
@@ -412,24 +559,124 @@
     document.getElementById('authForms').style.display = 'none';
     const dash = document.getElementById('dashboard');
     dash.classList.add('active');
-    const initiale = (user.first || 'U')[0].toUpperCase();
+    const name = user.displayName || user.email.split('@')[0] || 'Invité';
+    const initiale = (name || 'U')[0].toUpperCase();
     document.getElementById('dashAvatar').textContent = initiale;
-    document.getElementById('dashName').textContent = `${user.first} ${user.last || ''}`.trim();
-    document.getElementById('dashEmail').textContent = user.email;
-    document.getElementById('dashRating').textContent = user.rating ? user.rating : '–';
-    if (!user.rating) dash.querySelector('.dash-rating').innerHTML = '⭐ Pas encore noté';
-    dash.querySelectorAll('.dash-stat-num')[0].textContent = user.spots ?? 0;
-    dash.querySelectorAll('.dash-stat-num')[1].textContent = user.sorties ?? 0;
-    dash.querySelectorAll('.dash-stat-num')[2].textContent = user.avis ?? 0;
+    document.getElementById('dashName').textContent = name;
+    document.getElementById('dashEmail').textContent = user.email || 'invité@straval.local';
+    const profile = currentProfile || loadProfile(user.uid || 'guest');
+    document.getElementById('dashRating').textContent = profile.rating ? profile.rating : '–';
+    if (!profile.rating) dash.querySelector('.dash-rating').innerHTML = '⭐ Pas encore noté';
+    dash.querySelectorAll('.dash-stat-num')[0].textContent = profile.spots ?? 0;
+    dash.querySelectorAll('.dash-stat-num')[1].textContent = profile.sorties ?? 0;
+    dash.querySelectorAll('.dash-stat-num')[2].textContent = profile.avis ?? 0;
+    renderTracking(user);
+  }
+
+  function renderTracking(user) {
+    const track = loadTracking(user.uid);
+    document.getElementById('trackKm').textContent = `${track.totalKm.toFixed(1)} km`;
+    document.getElementById('trackAvg').textContent = `${track.avgSpeed.toFixed(1)} km/h`;
+    document.getElementById('trackMax').textContent = `${track.maxSpeed.toFixed(1)} km/h`;
+    document.getElementById('trackTime').textContent = formatDuration(track.totalSeconds);
+    const list = document.getElementById('trackList');
+    if (track.entries.length === 0) {
+      list.innerHTML = '<div class="track-empty">Aucune sortie enregistrée pour le moment.</div>';
+      return;
+    }
+    list.innerHTML = track.entries.slice().reverse().map(entry => `
+      <div class="track-entry">
+        <div>
+          <div class="track-entry-date">${entry.date}</div>
+          <div class="track-entry-meta">${entry.distance.toFixed(1)} km · ${formatDuration(entry.duration)} · vmax ${entry.maxSpeed.toFixed(1)} km/h</div>
+        </div>
+        <div class="track-entry-meta">${entry.speed.toFixed(1)} km/h</div>
+      </div>
+    `).join('');
+  }
+
+  function loadTracking(uid) {
+    const key = `straval_tracking_${uid}`;
+    const saved = JSON.parse(localStorage.getItem(key) || 'null');
+    if (!saved) {
+      return { entries: [], totalKm: 0, totalSeconds: 0, avgSpeed: 0, maxSpeed: 0 };
+    }
+    return saved;
+  }
+
+  function saveTracking(uid, tracking) {
+    const key = `straval_tracking_${uid}`;
+    localStorage.setItem(key, JSON.stringify(tracking));
+  }
+
+  function addTrackEntry() {
+    if (!currentUser) {
+      showToast('Connecte-toi pour enregistrer des sorties.');
+      return;
+    }
+    const distance = parseFloat(document.getElementById('trackDistance').value);
+    const durationText = document.getElementById('trackDuration').value.trim();
+    const maxSpeed = parseFloat(document.getElementById('trackSpeedMax').value);
+    if (!distance || distance <= 0 || !durationText || !maxSpeed || maxSpeed <= 0) {
+      showToast('Remplis correctement la distance, la durée et la vitesse max.');
+      return;
+    }
+    const duration = parseDuration(durationText);
+    if (duration <= 0) {
+      showToast('Durée invalide. Utilise le format hh:mm.');
+      return;
+    }
+    const track = loadTracking(currentUser.uid);
+    const speed = distance / (duration / 3600);
+    const entry = {
+      date: new Date().toLocaleDateString('fr-FR'),
+      distance,
+      duration,
+      maxSpeed,
+      speed
+    };
+    track.entries.push(entry);
+    track.totalKm = track.entries.reduce((sum, e) => sum + e.distance, 0);
+    track.totalSeconds = track.entries.reduce((sum, e) => sum + e.duration, 0);
+    track.avgSpeed = track.totalSeconds > 0 ? track.totalKm / (track.totalSeconds / 3600) : 0;
+    track.maxSpeed = Math.max(...track.entries.map(e => e.maxSpeed), 0);
+    saveTracking(currentUser.uid, track);
+    renderTracking(currentUser);
+    document.getElementById('trackDistance').value = '';
+    document.getElementById('trackDuration').value = '';
+    document.getElementById('trackSpeedMax').value = '';
+    if (currentUser && currentProfile) {
+      currentProfile.sorties = (currentProfile.sorties ?? 0) + 1;
+      saveProfile(currentUser.uid, currentProfile);
+      document.querySelectorAll('.dash-stat-num')[1].textContent = currentProfile.sorties;
+    }
+    showToast('Sortie ajoutée ✅');
+  }
+
+  function parseDuration(value) {
+    const parts = value.split(':').map(p => parseInt(p.trim(), 10));
+    if (parts.length !== 2 || parts.some(isNaN) || parts[0] < 0 || parts[1] < 0 || parts[1] >= 60) return 0;
+    return parts[0] * 3600 + parts[1] * 60;
+  }
+
+  function formatDuration(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
   }
 
   function logout() {
-    sessionStorage.removeItem('straval_user');
-    currentUser = null;
-    document.getElementById('dashboard').classList.remove('active');
-    document.getElementById('authForms').style.display = 'block';
-    switchTab('login');
-    showToast('👋 À bientôt !');
+    auth.signOut().catch(() => null).finally(() => {
+      if (currentUser && currentUser.uid === 'guest') {
+        localStorage.removeItem(getGuestUserKey());
+      }
+      currentUser = null;
+      currentProfile = null;
+      document.getElementById('dashboard').classList.remove('active');
+      document.getElementById('authForms').style.display = 'block';
+      switchTab('login');
+      showToast('👋 À bientôt !');
+    });
   }
 
   function editProfile() {

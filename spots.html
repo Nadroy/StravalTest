@@ -72,19 +72,21 @@
     .spot-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem; }
     .spot-name { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 600; color: var(--text); }
     .spot-note { display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; font-weight: 700; color: var(--terra); white-space: nowrap; }
-    .spot-loc { font-size: 0.83rem; color: var(--text-light); margin-bottom: 0.7rem; }
+    .spot-loc { font-size: 0.83rem; color: var(--text-light); margin-bottom: 0.35rem; }
+    .spot-coords { font-size: 0.8rem; color: var(--terra-dark); font-weight: 600; margin-bottom: 0.8rem; }
     .spot-desc {
-    font-size: 0.88rem;
-    color: var(--text-light);
-    font-weight: 300;
-    line-height: 1.6;
-    margin-bottom: 1rem;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    line-clamp: 2;
-    overflow: hidden;
-}    .spot-footer { display: flex; align-items: center; justify-content: space-between; }
+      font-size: 0.88rem;
+      color: var(--text-light);
+      font-weight: 300;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-clamp: 2;
+      overflow: hidden;
+    }
+    .spot-footer { display: flex; align-items: center; justify-content: space-between; }
     .spot-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
     .tag { background: var(--cream); color: var(--text-light); font-size: 0.72rem; padding: 0.2rem 0.65rem; border-radius: 1rem; font-weight: 500; }
     .btn-spot { background: var(--green); color: white; padding: 0.45rem 1.1rem; border-radius: 2rem; border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.2s; }
@@ -106,7 +108,11 @@
     .modal-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
     .modal-name { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; color: var(--text); }
     .modal-note { font-size: 1rem; font-weight: 700; color: var(--terra); }
-    .modal-loc { font-size: 0.9rem; color: var(--text-light); margin-bottom: 1rem; }
+    .modal-loc { font-size: 0.9rem; color: var(--text-light); margin-bottom: 0.75rem; }
+    .modal-gps { margin-bottom: 1rem; padding: 0.95rem 1rem; border-radius: 1rem; background: #F5EDE0; border: 1px solid rgba(76,106,60,0.12); }
+    .modal-gps-label { font-size: 0.82rem; color: var(--text-light); margin-bottom: 0.2rem; }
+    .modal-gps-value { font-size: 1rem; color: var(--text); font-weight: 700; }
+    .modal-route-links { display: flex; gap: 0.85rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
     .modal-desc { font-size: 0.95rem; color: var(--text-light); line-height: 1.8; font-weight: 300; margin-bottom: 1.5rem; }
     .modal-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.8rem; }
     .modal-tag { background: var(--cream); color: var(--text-light); font-size: 0.82rem; padding: 0.3rem 0.85rem; border-radius: 2rem; font-weight: 500; }
@@ -210,14 +216,15 @@
 
 <script>
   const SPOTS = [
-    { id:1, name:"Clairière des Vents", loc:"Fontainebleau, Île-de-France", type:"foret", emoji:"🌲", note:4.9, desc:"Une clairière lumineuse au cœur de la forêt de Fontainebleau. Idéale pour méditer au lever du soleil. Le silence y est absolu, brisé seulement par le chant des oiseaux.", tags:["Méditation","Balade","Silence"], saved:false },
-    { id:2, name:"Crête des Soupirs", loc:"Vercors, Auvergne-Rhône-Alpes", type:"montagne", emoji:"⛰️", note:4.6, desc:"Un panorama époustouflant sur les Alpes depuis cette crête sauvage. Le vent y souffle fort, mais la vue récompense chaque effort.", tags:["Randonnée","Vue panoramique","Effort"], saved:false },
-    { id:3, name:"Méandre Sauvage", loc:"Ardèche, Occitanie", type:"riviere", emoji:"🏞️", note:4.8, desc:"L'Ardèche dans sa forme la plus sauvage. Baignade et contemplation garanties dans des eaux cristallines entourées de falaises calcaires.", tags:["Baignade","Nature","Falaises"], saved:false },
-    { id:4, name:"Dunes du Silence", loc:"Landes, Nouvelle-Aquitaine", type:"plage", emoji:"🏖️", note:4.5, desc:"Des dunes immenses battues par l'Atlantique. Un endroit hors du temps où le sable et le vent sculpturent des paysages mouvants.", tags:["Surf","Coucher de soleil","Vent"], saved:false },
-    { id:5, name:"Prairie des Lucioles", loc:"Corrèze, Nouvelle-Aquitaine", type:"prairie", emoji:"🌾", note:4.7, desc:"En été, cette prairie s'illumine de lucioles au crépuscule. Un spectacle naturel magique qui laisse sans voix.", tags:["Photographie","Soirée","Magie"], saved:false },
-    { id:6, name:"Cascade de Mouthe", loc:"Doubs, Bourgogne-Franche-Comté", type:"riviere", emoji:"💧", note:4.9, desc:"La source du Doubs jaillit dans un cirque naturel d'une beauté rare. L'eau y est pure et froide, la végétation luxuriante.", tags:["Randonnée","Eau","Fraîcheur"], saved:false },
-    { id:7, name:"Bois du Cerf", loc:"Sologne, Centre-Val de Loire", type:"foret", emoji:"🌲", note:4.4, desc:"Forêt dense et mystérieuse, habitat naturel des cerfs de Sologne. À l'automne, le brame résonne dans les sous-bois dorés.", tags:["Faune","Silence","Automne"], saved:false },
-    { id:8, name:"Col des Nuages", loc:"Pyrénées, Occitanie", type:"montagne", emoji:"⛰️", note:4.8, desc:"À 2300m d'altitude, les nuages se forment sous vos pieds. Une expérience unique de marcher au-dessus des vallées brumeuses.", tags:["Altitude","Contemplation","Brume"], saved:false },
+    // Coordonnées approximatives basées sur la ville/région indiquée
+    { id:1, name:"Clairière des Vents", loc:"Fontainebleau, Île-de-France", lat:48.4044, lng:2.7005, type:"foret", emoji:"🌲", note:4.9, desc:"Une clairière lumineuse au cœur de la forêt de Fontainebleau. Idéale pour méditer au lever du soleil. Le silence y est absolu, brisé seulement par le chant des oiseaux.", tags:["Méditation","Balade","Silence"], saved:false },
+    { id:2, name:"Crête des Soupirs", loc:"Vercors, Auvergne-Rhône-Alpes", lat:45.0429, lng:5.5047, type:"montagne", emoji:"⛰️", note:4.6, desc:"Un panorama époustouflant sur les Alpes depuis cette crête sauvage. Le vent y souffle fort, mais la vue récompense chaque effort.", tags:["Randonnée","Vue panoramique","Effort"], saved:false },
+    { id:3, name:"Méandre Sauvage", loc:"Ardèche, Occitanie", lat:44.3028, lng:4.2836, type:"riviere", emoji:"🏞️", note:4.8, desc:"L'Ardèche dans sa forme la plus sauvage. Baignade et contemplation garanties dans des eaux cristallines entourées de falaises calcaires.", tags:["Baignade","Nature","Falaises"], saved:false },
+    { id:4, name:"Dunes du Silence", loc:"Landes, Nouvelle-Aquitaine", lat:44.3458, lng:-1.3267, type:"plage", emoji:"🏖️", note:4.5, desc:"Des dunes immenses battues par l'Atlantique. Un endroit hors du temps où le sable et le vent sculpturent des paysages mouvants.", tags:["Surf","Coucher de soleil","Vent"], saved:false },
+    { id:5, name:"Prairie des Lucioles", loc:"Corrèze, Nouvelle-Aquitaine", lat:45.2711, lng:1.7716, type:"prairie", emoji:"🌾", note:4.7, desc:"En été, cette prairie s'illumine de lucioles au crépuscule. Un spectacle naturel magique qui laisse sans voix.", tags:["Photographie","Soirée","Magie"], saved:false },
+    { id:6, name:"Cascade de Mouthe", loc:"Doubs, Bourgogne-Franche-Comté", lat:46.7047, lng:6.1983, type:"riviere", emoji:"💧", note:4.9, desc:"La source du Doubs jaillit dans un cirque naturel d'une beauté rare. L'eau y est pure et froide, la végétation luxuriante.", tags:["Randonnée","Eau","Fraîcheur"], saved:false },
+    { id:7, name:"Bois du Cerf", loc:"Sologne, Centre-Val de Loire", lat:47.5200, lng:2.0100, type:"foret", emoji:"🌲", note:4.4, desc:"Forêt dense et mystérieuse, habitat naturel des cerfs de Sologne. À l'automne, le brame résonne dans les sous-bois dorés.", tags:["Faune","Silence","Automne"], saved:false },
+    { id:8, name:"Col des Nuages", loc:"Pyrénées, Occitanie", lat:42.7885, lng:0.8036, type:"montagne", emoji:"⛰️", note:4.8, desc:"À 2300m d'altitude, les nuages se forment sous vos pieds. Une expérience unique de marcher au-dessus des vallées brumeuses.", tags:["Altitude","Contemplation","Brume"], saved:false },
   ];
 
   let activeFilter = 'all';
@@ -257,6 +264,7 @@
             <div class="spot-note">⭐ ${s.note}</div>
           </div>
           <div class="spot-loc">📍 ${s.loc}</div>
+          <div class="spot-coords">GPS : ${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}</div>
           <div class="spot-desc">${s.desc}</div>
           <div class="spot-footer">
             <div class="spot-tags">${s.tags.slice(0,2).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
@@ -295,6 +303,14 @@
           <div class="modal-note">⭐ ${currentSpot.note}</div>
         </div>
         <div class="modal-loc">📍 ${currentSpot.loc} · ${typeName(currentSpot.type)}</div>
+        <div class="modal-gps">
+          <div class="modal-gps-label">Coordonnées GPS</div>
+          <div class="modal-gps-value">${currentSpot.lat.toFixed(5)}, ${currentSpot.lng.toFixed(5)}</div>
+        </div>
+        <div class="modal-route-links">
+          <button class="btn-outline" onclick="openInGoogleMaps(currentSpot)">Google Maps</button>
+          <button class="btn-outline" onclick="openInWaze(currentSpot)">Waze</button>
+        </div>
         <div class="modal-desc">${currentSpot.desc}</div>
         <div class="modal-tags">${currentSpot.tags.map(t=>`<span class="modal-tag">${t}</span>`).join('')}</div>
         <div class="modal-actions">
@@ -320,6 +336,16 @@
 
   function goToMap(id) {
     window.location.href = `map.html#spot-${id}`;
+  }
+
+  function openInGoogleMaps(spot) {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`;
+    window.open(url, '_blank');
+  }
+
+  function openInWaze(spot) {
+    const url = `https://www.waze.com/ul?ll=${spot.lat},${spot.lng}&navigate=yes`;
+    window.open(url, '_blank');
   }
 
   function toggleSaveModal(id) {
