@@ -14,16 +14,25 @@
       --text: #2C2015; --text-light: #6B5744; --white: #FFFDF8;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--text); line-height: 1.6; overflow-x: hidden; }
+    body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--text); line-height: 1.6; overflow-x: hidden; overflow-y: auto; }
+    body.splash-active { overflow: hidden; }
 
     /* HEADER */
     header { position: sticky; top: 0; z-index: 100; background: rgba(245,237,224,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--cream-dark); padding: 0 2rem; }
-    nav { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 70px; }
+    nav { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: flex-start; gap: 1rem; height: 70px; }
     .logo { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; }
     .logo-icon { width: 38px; height: 38px; }
     .logo-text { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; color: var(--terra-dark); letter-spacing: 0.05em; }
     .logo-text span { color: var(--green); }
-    .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
+    .mode-switch { display: flex; align-items: center; gap: 0.6rem; margin-left: 1.2rem; }
+    .switch { position: relative; width: 48px; height: 24px; display: inline-block; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; border-radius: 999px; background: rgba(76,106,60,0.15); transition: background 0.3s ease; }
+    .slider::before { content: '' ; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.15); transition: transform 0.3s ease; }
+    .switch input:checked + .slider { background: linear-gradient(135deg, #C1714F, #E8A882); }
+    .switch input:checked + .slider::before { transform: translateX(24px); }
+    .mode-label { font-size: 0.9rem; color: var(--text-light); white-space: nowrap; max-width: 12rem; overflow: hidden; text-overflow: ellipsis; }
+    .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; margin-left: auto; }
     .nav-links a { text-decoration: none; font-size: 0.95rem; font-weight: 500; color: var(--text-light); transition: color 0.2s; }
     .nav-links a:hover { color: var(--terra); }
     .btn-nav { background: var(--terra); color: var(--white) !important; padding: 0.5rem 1.2rem; border-radius: 2rem; }
@@ -117,6 +126,59 @@
     .footer-col a:hover { color: #E8A882; }
     .footer-bottom { max-width: 1200px; margin: 2rem auto 0; padding-top: 1.5rem; border-top: 1px solid rgba(255,253,248,0.1); display: flex; justify-content: space-between; font-size: 0.82rem; flex-wrap: wrap; gap: 0.5rem; }
 
+    .splash {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, rgba(255,255,255,0.12), rgba(245,237,224,0.95) 35%, rgba(193,113,79,0.95));
+      z-index: 999;
+      overflow: hidden;
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+    .splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .splash-inner {
+      text-align: center;
+      color: var(--text);
+      padding: 2rem;
+      max-width: 520px;
+      width: min(90vw, 520px);
+      animation: popIn 0.7s ease both;
+    }
+    .splash-logo-icon { width: 68px; height: 68px; margin: 0 auto 1rem; display: block; }
+    .splash-logo-text { display: block; font-family: 'Playfair Display', serif; font-size: 2.6rem; font-weight: 700; letter-spacing: 0.08em; color: var(--green); margin-bottom: 0.6rem; }
+    .splash-tag { font-size: 1.05rem; font-weight: 600; color: var(--terra-dark); margin-bottom: 2rem; letter-spacing: 0.08em; }
+    .splash-forest { position: relative; height: 110px; display: flex; align-items: flex-end; justify-content: center; gap: 1rem; margin: 0 auto; }
+    .tree { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 44px; height: 110px; }
+    .trunk { width: 10px; height: 24px; background: #7A5A3A; border-radius: 999px; margin-top: 8px; opacity: 0; animation: trunkGrow 0.7s ease forwards; }
+    .tree .foliage {
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-bottom: 32px solid var(--green);
+      transform-origin: center bottom;
+      transform: scaleY(0);
+      opacity: 0;
+      border-radius: 12px 12px 0 0;
+      animation: treeGrow 0.9s ease forwards;
+    }
+    .tree-1 .foliage { animation-delay: 0.35s; }
+    .tree-1 .trunk { animation-delay: 0.55s; }
+    .tree-2 .foliage { animation-delay: 0.45s; }
+    .tree-2 .trunk { animation-delay: 0.65s; }
+    .tree-3 .foliage { animation-delay: 0.55s; }
+    .tree-3 .trunk { animation-delay: 0.75s; }
+    .tree-4 .foliage { animation-delay: 0.65s; }
+    .tree-4 .trunk { animation-delay: 0.85s; }
+
+    @keyframes popIn { from { opacity: 0; transform: translateY(18px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes treeGrow { from { opacity: 0; transform: scaleY(0.1); } to { opacity: 1; transform: scaleY(1); } }
+    @keyframes trunkGrow { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
     /* ANIMATIONS */
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
@@ -129,9 +191,37 @@
       .community-grid { grid-template-columns: 1fr; }
       .footer-inner { grid-template-columns: 1fr; gap: 2rem; }
     }
+    
+    /* Dev helper button to force/show splash */
+    .dev-splash-btn {
+      position: fixed; right: 14px; bottom: 14px; z-index: 1500;
+      background: rgba(76,106,60,0.95); color: #fff; border: none; padding: 0.45rem 0.7rem; border-radius: 999px; cursor: pointer; font-size: 0.85rem; box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      opacity: 0.9;
+    }
+    .dev-splash-btn:hover { transform: translateY(-2px); }
   </style>
 </head>
 <body>
+  <div class="splash" id="splashScreen">
+    <div class="splash-inner">
+      <div class="splash-brand">
+        <svg class="splash-logo-icon" viewBox="0 0 38 38" fill="none" aria-hidden="true">
+          <circle cx="19" cy="19" r="19" fill="#4C6A3C" opacity="0.15"/>
+          <path d="M19 6 C12 10, 8 17, 11 24 C14 30, 22 32, 27 27 C32 22, 30 12, 19 6Z" fill="#4C6A3C"/>
+          <path d="M19 6 L17 26" stroke="#F5EDE0" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M19 14 C17 17, 16 20, 19 22 C22 20, 21 17, 19 14Z" fill="#C1714F"/>
+        </svg>
+        <span class="splash-logo-text">STRAVAL</span>
+      </div>
+      <p class="splash-tag">La v0.2.0 est la !</p>
+      <div class="splash-forest">
+        <div class="tree tree-1"><div class="foliage"></div><div class="trunk"></div></div>
+        <div class="tree tree-2"><div class="foliage"></div><div class="trunk"></div></div>
+        <div class="tree tree-3"><div class="foliage"></div><div class="trunk"></div></div>
+        <div class="tree tree-4"><div class="foliage"></div><div class="trunk"></div></div>
+      </div>
+    </div>
+  </div>
 
 <header>
   <nav>
@@ -144,6 +234,13 @@
       </svg>
       <span class="logo-text">STRA<span>VAL V1.2</span></span>
     </a>
+    <div class="mode-switch">
+      <label class="switch">
+        <input type="checkbox" id="modeToggle" aria-label="Basculer vers Stravaaaal" />
+        <span class="slider"></span>
+      </label>
+      <span class="mode-label" id="modeLabel">Starval</span>
+    </div>
     <ul class="nav-links" id="navLinks">
       <li><a href="index.html">Accueil</a></li>
       <li><a href="map.html">Carte</a></li>
@@ -284,6 +381,8 @@
   </div>
 </footer>
 
+<audio id="splashAudio" src="splash-sound.wav" preload="auto" playsinline></audio>
+
 <script>
   document.getElementById('navToggle').addEventListener('click', () => {
     document.getElementById('navLinks').classList.toggle('open');
@@ -292,6 +391,87 @@
     entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
   }, { threshold: 0.12 });
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  const modeToggle = document.getElementById('modeToggle');
+  const modeLabel = document.getElementById('modeLabel');
+  if (modeToggle && modeLabel) {
+    modeToggle.addEventListener('change', (event) => {
+      if (event.target.checked) {
+        modeLabel.textContent = 'Stravaaaal (utilisateurs aguéris uniquement 🫣)';
+        window.location.href = 'stravaaaal.html';
+      }
+    });
+  }
+
+  window.addEventListener('load', () => {
+    const splash = document.getElementById('splashScreen');
+    const splashAudio = document.getElementById('splashAudio');
+    const flagKey = 'splashSeen_v0.2.0';
+    if (!splash) return;
+
+    // Si on passe ?splash=1 dans l'URL, forcer l'affichage (utile pour tester)
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('splash') === '1') { sessionStorage.removeItem(flagKey); }
+    } catch (e) { /* ignore */ }
+
+    console.log('[splash] checking sessionStorage flag', flagKey);
+    // Si l'utilisateur a déjà vu le splash pour cette version dans CETTE session (onglet), on l'enlève tout de suite
+    try {
+      const seen = sessionStorage.getItem(flagKey);
+      if (seen) {
+        console.log('[splash] already seen in this session, removing splash');
+        splash.remove();
+        document.body.classList.remove('splash-active');
+        return;
+      } else {
+        console.log('[splash] not seen in this session — will show splash');
+      }
+    } catch (e) {
+      // si sessionStorage indisponible, continuer et montrer le splash
+    }
+
+    // Montrer splash la première fois
+    document.body.classList.add('splash-active');
+    if (splashAudio) {
+      splashAudio.play().catch(() => {
+        /* Autoplay peut être bloqué par le navigateur avant une interaction utilisateur. */
+      });
+    }
+    setTimeout(() => {
+      splash.classList.add('hidden');
+      if (splashAudio) { try { splashAudio.pause(); splashAudio.currentTime = 0; } catch (e) {} }
+    }, 3100);
+    setTimeout(() => {
+      splash.remove();
+      document.body.classList.remove('splash-active');
+      try { sessionStorage.setItem(flagKey, '1'); } catch(e) { /* ignore */ }
+    }, 4200);
+  });
+
+  // Raccourci clavier pour développeurs : Shift+S supprime le flag de session et recharge la page
+  window.addEventListener('keydown', (e) => {
+    if (e.shiftKey && e.key.toLowerCase() === 's') {
+      try { sessionStorage.removeItem('splashSeen_v0.2.0'); } catch (err) {}
+      location.reload();
+    }
+  });
+
+  // Bouton visible pour réinitialiser le splash (utilisateur / test rapide)
+  (function createDevButton(){
+    try {
+      const btn = document.createElement('button');
+      btn.id = 'devSplashBtn';
+      btn.className = 'dev-splash-btn';
+      btn.textContent = 'Voir le splash';
+      btn.title = 'Supprime le flag splash et recharge pour voir l\'animation';
+      btn.addEventListener('click', () => {
+        try { sessionStorage.removeItem('splashSeen_v0.2.0'); } catch (e) {}
+        location.reload();
+      });
+      document.body.appendChild(btn);
+    } catch (e) { /* ignore in older browsers */ }
+  })();
 </script>
 </body>
 </html>
