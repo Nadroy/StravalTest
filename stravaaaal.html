@@ -17,6 +17,7 @@
     /* subtle blur layer for depth */
     .vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 20% 20%, rgba(255,160,185,0.06), transparent 20%), radial-gradient(ellipse at 80% 80%, rgba(0,0,0,0.25), transparent 40%);mix-blend-mode:overlay}
   </style>
+  <link rel="stylesheet" href="css/responsive.css" />
 </head>
 <body>
   <canvas id="bg"></canvas>
@@ -28,6 +29,7 @@
   </div>
   <div class="hint">Astuce : secoue le téléphone pour amplifier l'effet</div>
 
+  <script src="js/responsive.js"></script>
   <script>
     (function(){
       const canvas = document.getElementById('bg');

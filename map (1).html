@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>STRAVAL — Carte des spots</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    :root {
+      --terra: #C1714F; --terra-dark: #9B5A3A; --terra-light: #E8A882;
+      --green: #4C6A3C; --green-light: #7A9A65;
+      --cream: #F5EDE0; --cream-dark: #E8D9C0;
+      --text: #2C2015; --text-light: #6B5744; --white: #FFFDF8;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* HEADER */
+    header { background: rgba(245,237,224,0.97); backdrop-filter: blur(10px); border-bottom: 1px solid var(--cream-dark); padding: 0 2rem; flex-shrink: 0; z-index: 1000; }
+    nav { max-width: 100%; display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 1rem; }
+    .logo { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; flex-shrink: 0; }
+    .logo-icon { width: 34px; height: 34px; }
+    .logo-text { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--terra-dark); letter-spacing: 0.05em; }
+    .logo-text span { color: var(--green); }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+    .nav-links a { text-decoration: none; font-size: 0.9rem; font-weight: 500; color: var(--text-light); transition: color 0.2s; }
+    .nav-links a:hover, .nav-links a.active { color: var(--terra); }
+    .btn-nav { background: var(--terra); color: var(--white) !important; padding: 0.45rem 1.1rem; border-radius: 2rem; }
+    .btn-nav:hover { background: var(--terra-dark) !important; }
+    .nav-toggle { display: none; background: none; border: none; cursor: pointer; flex-direction: column; gap: 5px; }
+    .nav-toggle span { display: block; width: 25px; height: 2px; background: var(--text); border-radius: 2px; }
+
+    /* LAYOUT CARTE */
+    .map-layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* SIDEBAR */
+    .sidebar { width: 360px; flex-shrink: 0; background: var(--white); border-right: 1px solid var(--cream-dark); display: flex; flex-direction: column; overflow: hidden; z-index: 10; }
+    .sidebar-header { padding: 1.2rem 1.4rem; border-bottom: 1px solid var(--cream-dark); }
+    .sidebar-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 600; color: var(--text); margin-bottom: 0.8rem; }
+    .search-bar { display: flex; gap: 0.6rem; }
+    .search-input { flex: 1; padding: 0.6rem 0.9rem; border: 1.5px solid var(--cream-dark); border-radius: 2rem; font-size: 0.88rem; background: var(--cream); color: var(--text); outline: none; font-family: 'Inter', sans-serif; transition: border-color 0.2s; }
+    .search-input:focus { border-color: var(--terra); }
+    .search-input::placeholder { color: var(--text-light); }
+    .btn-locate { background: var(--green); color: white; border: none; padding: 0.6rem 0.9rem; border-radius: 2rem; cursor: pointer; font-size: 0.85rem; white-space: nowrap; font-weight: 500; transition: background 0.2s; }
+    .btn-locate:hover { background: var(--green-light); }
+
+    /* FILTRES */
+    .filters { padding: 0.9rem 1.4rem; border-bottom: 1px solid var(--cream-dark); display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .filter-chip { background: var(--cream); border: 1.5px solid var(--cream-dark); color: var(--text-light); padding: 0.3rem 0.85rem; border-radius: 2rem; font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .filter-chip:hover { border-color: var(--terra); color: var(--terra); }
+    .filter-chip.active { background: var(--terra); border-color: var(--terra); color: white; }
+    .tracker-panel { background: var(--white); border-radius: 1.5rem; border: 1px solid var(--cream-dark); margin: 0 1.4rem 1rem; padding: 1rem 1rem 0.85rem; }
+    .tracker-title { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 0.55rem; }
+    .tracker-login { font-size: 0.8rem; color: var(--text-light); margin-bottom: 0.85rem; }
+    .tracker-tabs { display: flex; gap: 0.5rem; margin-bottom: 0.85rem; }
+    .tracker-tab { flex: 1; border: 1px solid var(--cream-dark); border-radius: 1rem; background: var(--cream); color: var(--text); padding: 0.65rem 0.8rem; font-size: 0.84rem; font-weight: 600; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
+    .tracker-tab.active { background: var(--terra); border-color: var(--terra); color: white; }
+    .tracker-content { display: none; }
+    .tracker-content.active { display: block; }
+    .tracker-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.7rem; margin-bottom: 0.85rem; }
+    .tracker-stat { background: var(--cream); border-radius: 1rem; padding: 0.75rem; text-align: center; }
+    .tracker-stat strong { display: block; font-family:'Playfair Display',serif; font-size: 1.05rem; color: var(--terra); margin-bottom: 0.2rem; }
+    .tracker-stat span { display:block; font-size:0.76rem; color:var(--text-light); }
+    .tracker-actions { display:flex; gap:0.7rem; flex-wrap:wrap; margin-bottom:0.65rem; }
+    .tracker-sensor { font-size:0.78rem; color: var(--text-light); margin-bottom:0.15rem; }
+
+    .history-list { max-height: 220px; overflow-y: auto; display: grid; gap: 0.55rem; }
+    .history-list::-webkit-scrollbar { width: 6px; }
+    .history-list::-webkit-scrollbar-thumb { background: var(--cream-dark); border-radius: 3px; }
+    .history-entry { background: #faf5ef; border: 1px solid var(--cream-dark); border-radius: 1rem; padding: 0.8rem; display: grid; gap: 0.65rem; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .history-entry:hover { transform: translateY(-1px); box-shadow: 0 12px 25px rgba(0,0,0,0.08); }
+    .history-entry strong { font-size: 0.95rem; color: var(--terra); }
+    .history-entry span { font-size: 0.78rem; color: var(--text-light); }
+    .history-entry-actions { display: flex; justify-content: flex-end; }
+    .share-btn { background: #0b8a43; color: white; border: none; border-radius: 999px; padding: 0.45rem 0.9rem; font-size: 0.78rem; cursor: pointer; transition: background 0.2s; }
+    .share-btn:hover { background: #036b31; }
+    .history-empty { font-size: 0.84rem; color: var(--text-light); text-align: center; padding: 0.75rem 0; }
+
+    /* LISTE SPOTS */
+    .spots-list { flex: 1; overflow-y: auto; padding: 0.8rem; }
+    .spots-list::-webkit-scrollbar { width: 5px; }
+    .spots-list::-webkit-scrollbar-thumb { background: var(--cream-dark); border-radius: 3px; }
+    .spot-item { display: flex; gap: 0.9rem; padding: 0.9rem; border-radius: 1rem; cursor: pointer; transition: background 0.2s; border: 1.5px solid transparent; margin-bottom: 0.5rem; }
+    .spot-item:hover { background: var(--cream); }
+    .spot-item.selected { background: var(--cream); border-color: var(--terra); }
+    .spot-thumb { width: 56px; height: 56px; border-radius: 0.8rem; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0; }
+    .thumb-foret { background: linear-gradient(135deg, #2d4a1e, #4C6A3C); }
+    .thumb-montagne { background: linear-gradient(135deg, #3a3025, #6b5a45); }
+    .thumb-riviere { background: linear-gradient(135deg, #1a3a4a, #2a7a8a); }
+    .thumb-plage { background: linear-gradient(135deg, #8B6914, #c4a43a); }
+    .thumb-prairie { background: linear-gradient(135deg, #3a5a1a, #7aaa3a); }
+    .spot-info { flex: 1; min-width: 0; }
+    .spot-name { font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .spot-meta { font-size: 0.78rem; color: var(--text-light); margin: 0.15rem 0; }
+    .spot-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.3rem; }
+    .tag { background: var(--cream); color: var(--text-light); font-size: 0.7rem; padding: 0.15rem 0.6rem; border-radius: 1rem; }
+    .tag-note { background: rgba(193,113,79,0.12); color: var(--terra-dark); font-weight: 600; }
+
+    /* ADD SPOT BTN */
+    .add-spot-btn { margin: 0.8rem; padding: 0.8rem; background: var(--terra); color: white; border: none; border-radius: 1rem; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background 0.2s, transform 0.2s; }
+    .add-spot-btn:hover { background: var(--terra-dark); transform: translateY(-1px); }
+
+    /* CARTE */
+    #map { flex: 1; z-index: 1; }
+
+    /* POPUP personnalisé */
+    .custom-popup .leaflet-popup-content-wrapper { background: var(--white); border-radius: 1.2rem; box-shadow: 0 8px 32px rgba(44,32,21,0.15); border: 1px solid var(--cream-dark); padding: 0; overflow: hidden; }
+    .custom-popup .leaflet-popup-tip { background: var(--white); }
+    .popup-img { height: 90px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
+    .popup-body { padding: 0.9rem 1.1rem 1rem; }
+    .popup-name { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 600; color: var(--text); margin-bottom: 0.2rem; }
+    .popup-loc { font-size: 0.8rem; color: var(--text-light); margin-bottom: 0.6rem; }
+    .popup-footer { display: flex; align-items: center; justify-content: space-between; }
+    .popup-note { font-size: 0.82rem; font-weight: 700; color: var(--terra); }
+    .popup-btn { background: var(--green); color: white; padding: 0.35rem 0.9rem; border-radius: 2rem; text-decoration: none; font-size: 0.8rem; font-weight: 500; border: none; cursor: pointer; transition: background 0.2s; }
+    .popup-btn:hover { background: var(--green-light); }
+
+    /* MODAL AJOUT SPOT */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(44,32,21,0.5); z-index: 2000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; backdrop-filter: blur(4px); }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal { background: var(--white); border-radius: 1.8rem; padding: 2rem; width: 90%; max-width: 480px; max-height: 90vh; overflow-y: auto; transform: translateY(20px); transition: transform 0.3s; }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .modal-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; color: var(--text); }
+    .modal-close { background: var(--cream); border: none; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; color: var(--text-light); transition: background 0.2s; }
+    .modal-close:hover { background: var(--cream-dark); }
+    .form-group { margin-bottom: 1.2rem; }
+    .form-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text); margin-bottom: 0.4rem; }
+    .form-input, .form-textarea, .form-select { width: 100%; padding: 0.7rem 1rem; border: 1.5px solid var(--cream-dark); border-radius: 0.8rem; font-size: 0.9rem; background: var(--cream); color: var(--text); outline: none; font-family: 'Inter', sans-serif; transition: border-color 0.2s; }
+    .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--terra); }
+    .form-textarea { resize: vertical; min-height: 90px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+    .btn-submit { width: 100%; padding: 0.85rem; background: var(--terra); color: white; border: none; border-radius: 1rem; font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.2s; margin-top: 0.5rem; }
+    .btn-submit:hover { background: var(--terra-dark); transform: translateY(-1px); }
+    .login-hint { text-align: center; font-size: 0.82rem; color: var(--text-light); margin-top: 0.8rem; }
+    .login-hint a { color: var(--terra); font-weight: 500; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--green); color: white; padding: 0.8rem 1.6rem; border-radius: 2rem; font-size: 0.9rem; font-weight: 500; z-index: 3000; transition: transform 0.4s ease; box-shadow: 0 4px 20px rgba(44,32,21,0.2); }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 768px) {
+      .map-layout { flex-direction: column-reverse; }
+      .sidebar { width: 100%; height: 45vh; border-right: none; border-top: 1px solid var(--cream-dark); }
+      #map { flex: 1; min-height: 55vw; }
+      .nav-links { display: none; }
+      .nav-links.open { display: flex; flex-direction: column; position: absolute; top: 64px; left: 0; right: 0; background: var(--cream); padding: 1rem 2rem; border-bottom: 1px solid var(--cream-dark); z-index: 999; }
+      .nav-toggle { display: flex; }
+    }
+  </style>
+  <link rel="stylesheet" href="css/responsive.css" />
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a href="index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 38 38" fill="none">
+        <circle cx="19" cy="19" r="19" fill="#4C6A3C" opacity="0.15"/>
+        <path d="M19 6 C12 10, 8 17, 11 24 C14 30, 22 32, 27 27 C32 22, 30 12, 19 6Z" fill="#4C6A3C"/>
+        <path d="M19 6 L17 26" stroke="#F5EDE0" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M19 14 C17 17, 16 20, 19 22 C22 20, 21 17, 19 14Z" fill="#C1714F"/>
+      </svg>
+      <span class="logo-text">STRA<span>VAL</span></span>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="map.html" class="active">Carte</a></li>
+      <li><a href="spots.html">Spots</a></li>
+      <li><a href="login.html" class="btn-nav">Connexion</a></li>
+    </ul>
+    <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
+  </nav>
+</header>
+
+<div class="map-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Spots communautaires</div>
+      <div class="search-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="Rechercher un spot…"/>
+        <button class="btn-locate" id="locateBtn">📍 Me localiser</button>
+      </div>
+    </div>
+    <div class="filters">
+      <div class="filter-chip active" data-filter="all">Tous</div>
+      <div class="filter-chip" data-filter="foret">🌲 Forêt</div>
+      <div class="filter-chip" data-filter="montagne">⛰️ Montagne</div>
+      <div class="filter-chip" data-filter="riviere">💧 Rivière</div>
+      <div class="filter-chip" data-filter="plage">🏖️ Plage</div>
+      <div class="filter-chip" data-filter="prairie">🌾 Prairie</div>
+    </div>
+    <div class="tracker-panel">
+      <div class="tracker-title">Suivi en direct</div>
+      <div class="tracker-login" id="trackerLoginStatus">Connecte-toi sur login.html</div>
+      <div class="tracker-tabs">
+        <button class="tracker-tab active" id="tabLive">Live</button>
+        <button class="tracker-tab" id="tabHistory">Mes sorties... de route</button>
+      </div>
+      <div class="tracker-content tracker-live-content active">
+        <div class="tracker-grid">
+          <div class="tracker-stat"><strong id="liveDistance">0.0 km</strong><span>Distance</span></div>
+          <div class="tracker-stat"><strong id="liveAvgSpeed">0.0 km/h</strong><span>Vitesse moyenne</span></div>
+          <div class="tracker-stat"><strong id="liveMaxSpeed">0.0 km/h</strong><span>Vitesse max</span></div>
+          <div class="tracker-stat"><strong id="liveTime">0h 00m</strong><span>Temps</span></div>
+        </div>
+        <div class="tracker-actions">
+          <button id="startTrackBtn" class="add-spot-btn">▶ Démarrer le suivi</button>
+          <button id="stopTrackBtn" class="add-spot-btn" style="display:none;background:#9B5A3A">■ Arrêter</button>
+        </div>
+        <div class="tracker-sensor" id="trackerSensor">Capteurs non disponibles</div>
+      </div>
+      <div class="tracker-content tracker-history-content">
+        <div class="history-title">Mes sorties... de route</div>
+        <div class="history-list" id="historyList"><div class="history-empty">Aucune sortie enregistrée pour le moment.</div></div>
+      </div>
+    </div>
+    <div class="spots-list" id="spotsList"></div>
+    <button class="add-spot-btn" id="addSpotBtn">＋ Proposer un spot</button>
+  </aside>
+  <div id="map"></div>
+</div>
+
+<!-- Modal ajout spot -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🌿 Proposer un spot</div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nom du spot *</label>
+      <input type="text" class="form-input" placeholder="Ex: Clairière des Vents" id="spotNameInput"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea class="form-textarea" placeholder="Décris ce lieu en quelques mots…" id="spotDescInput"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Type de lieu *</label>
+        <select class="form-select" id="spotTypeInput">
+          <option value="foret">🌲 Forêt</option>
+          <option value="montagne">⛰️ Montagne</option>
+          <option value="riviere">💧 Rivière</option>
+          <option value="plage">🏖️ Plage</option>
+          <option value="prairie">🌾 Prairie</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Région</label>
+        <input type="text" class="form-input" placeholder="Ex: Île-de-France" id="spotRegionInput"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Latitude</label>
+        <input type="number" class="form-input" id="spotLat" placeholder="48.8566" step="0.0001" readonly />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Longitude</label>
+        <input type="number" class="form-input" id="spotLng" placeholder="2.3522" step="0.0001" readonly />
+      </div>
+    </div>
+    <p style="font-size:0.8rem;color:var(--text-light);margin:-0.5rem 0 1rem;">💡 Les coordonnées seront automatiquement remplies depuis ta position actuelle.</p>
+    <div id="spotLocalCheck" style="font-size:0.88rem;color:var(--text-light);margin-bottom:0.8rem;">📍 Autorise la géolocalisation ; nous vérifierons que tu es sur place lors de la validation.</div>
+    <button type="button" class="btn-submit" id="submitSpot" disabled>Proposer ce spot 🌿</button>
+    <p class="login-hint">En tant qu'invité, votre spot sera soumis à validation. <a href="login.html">Connectez-vous</a> pour publier directement.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/responsive.js"></script>
+<script>
+  // Données des spots
+  const SPOTS = [
+    { id:1, name:"Clairière des Vents", loc:"Fontainebleau, Île-de-France", type:"foret", emoji:"🌲", note:4.9, lat:48.4044, lng:2.7005, desc:"Une clairière lumineuse au cœur de la forêt de Fontainebleau. Idéale pour méditer au lever du soleil.", tags:["Méditation","Balade"] },
+    { id:2, name:"Crête des Soupirs", loc:"Vercors, Auvergne-Rhône-Alpes", type:"montagne", emoji:"⛰️", note:4.6, lat:45.0429, lng:5.5047, desc:"Un panorama époustouflant sur les Alpes depuis cette crête sauvage.", tags:["Randonnée","Vue panoramique"] },
+    { id:3, name:"Méandre Sauvage", loc:"Ardèche, Occitanie", type:"riviere", emoji:"🏞️", note:4.8, lat:44.3028, lng:4.2836, desc:"L'Ardèche dans sa forme la plus sauvage. Baignade et contemplation garanties.", tags:["Baignade","Nature"] },
+    { id:4, name:"Dunes du Silence", loc:"Landes, Nouvelle-Aquitaine", type:"plage", emoji:"🏖️", note:4.5, lat:44.3458, lng:-1.3267, desc:"Des dunes immenses battues par l'Atlantique. Un endroit hors du temps.", tags:["Surf","Coucher de soleil"] },
+    { id:5, name:"Prairie des Lucioles", loc:"Corrèze, Nouvelle-Aquitaine", type:"prairie", emoji:"🌾", note:4.7, lat:45.2711, lng:1.7716, desc:"En été, cette prairie s'illumine de lucioles au crépuscule. Magique.", tags:["Photographie","Soirée"] },
+    { id:6, name:"Cascade de Mouthe", loc:"Doubs, Bourgogne-Franche-Comté", type:"riviere", emoji:"💧", note:4.9, lat:46.7047, lng:6.1983, desc:"La source du Doubs jaillit dans un cirque naturel d'une beauté rare.", tags:["Randonnée","Eau"] },
+    { id:7, name:"Bois du Cerf", loc:"Sologne, Centre-Val de Loire", type:"foret", emoji:"🌲", note:4.4, lat:47.5200, lng:2.0100, desc:"Forêt dense et mystérieuse, habitat naturel des cerfs de Sologne.", tags:["Faune","Silence"] },
+    { id:8, name:"Col des Nuages", loc:"Pyrénées, Occitanie", type:"montagne", emoji:"⛰️", note:4.8, lat:42.7885, lng:0.8036, desc:"À 2300m d'altitude, les nuages se forment sous vos pieds. Une expérience unique.", tags:["Altitude","Contemplation"] },
+  ];
+
+  let selectedSpotId = null;
+  let activeFilter = 'all';
+  let markers = {};
+  let pendingLatLng = null;
+  let spotPositionConfirmed = false;
+  let confirmedLat = null;
+  let confirmedLng = null;
+  let watchIdForModal = null;
+  let lastPositionTimestamp = 0;
+  const MAX_DISTANCE_METERS = 100; // distance max autorisée entre l'utilisateur et le point proposé (en mètres)
+  const POSITION_STALE_MS = 15000; // considérer la position comme périmée après 15s
+
+  // Init carte
+  const firebaseConfig = {
+    apiKey: "AIzaSyDNEN6s846Wz_83mAtTJwGk6-IO-JJnsHE",
+    authDomain: "straval-cf824.firebaseapp.com",
+    projectId: "straval-cf824",
+    storageBucket: "straval-cf824.firebasestorage.app",
+    messagingSenderId: "25642703432",
+    appId: "1:25642703432:web:0253d688f586d8c29c967d"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  let currentMapUser = null;
+  let currentMapGuest = null;
+
+  function getGuestUser() {
+    return JSON.parse(localStorage.getItem('straval_guest_user') || 'null');
+  }
+
+  function getActiveMapUser() {
+    return currentMapUser || currentMapGuest;
+  }
+
+  function getTrackingStorageKey() {
+    const user = getActiveMapUser();
+    if (!user) return null;
+    return `straval_tracking_${user.uid || 'guest'}`;
+  }
+
+  function loadTrackingStorage() {
+    const key = getTrackingStorageKey();
+    if (!key) return { entries: [], totalKm: 0, totalSeconds: 0, avgSpeed: 0, maxSpeed: 0 };
+    const saved = JSON.parse(localStorage.getItem(key) || 'null');
+    return saved || { entries: [], totalKm: 0, totalSeconds: 0, avgSpeed: 0, maxSpeed: 0 };
+  }
+
+  function saveTrackingStorage(track) {
+    const key = getTrackingStorageKey();
+    if (!key) return;
+    localStorage.setItem(key, JSON.stringify(track));
+  }
+
+  function saveLatestGuestTrack() {
+    const key = getTrackingStorageKey();
+    if (!key || !tracker.positions.length) return;
+    const existing = JSON.parse(localStorage.getItem(key) || 'null') || { entries: [], totalKm: 0, totalSeconds: 0, avgSpeed: 0, maxSpeed: 0 };
+    const entry = {
+      date: new Date().toLocaleDateString('fr-FR'),
+      distance: tracker.totalKm,
+      duration: tracker.totalSeconds,
+      maxSpeed: tracker.maxSpeed,
+      avgSpeed: tracker.totalSeconds > 0 ? tracker.totalKm / (tracker.totalSeconds / 3600) : 0,
+      positions: tracker.positions.map(p => ({ lat: p.lat, lng: p.lng }))
+    };
+    existing.entries.push(entry);
+    existing.totalKm = existing.entries.reduce((sum, e) => sum + e.distance, 0);
+    existing.totalSeconds = existing.entries.reduce((sum, e) => sum + e.duration, 0);
+    existing.avgSpeed = existing.totalSeconds > 0 ? existing.totalKm / (existing.totalSeconds / 3600) : 0;
+    existing.maxSpeed = existing.entries.reduce((max, e) => Math.max(max, e.maxSpeed), 0);
+    localStorage.setItem(key, JSON.stringify(existing));
+    renderTrackingHistory();
+  }
+
+  function clearHistoryRoute() {
+    if (historyRoute) {
+      map.removeLayer(historyRoute);
+      historyRoute = null;
+    }
+    historyRouteMarkers.forEach(marker => marker && map.removeLayer(marker));
+    historyRouteMarkers = [];
+  }
+
+  function showHistoryRoute(index) {
+    const history = loadTrackingStorage();
+    const entry = history.entries[index];
+    if (!entry || !entry.positions || !entry.positions.length) {
+      showToast('Aucune trace disponible pour cette sortie.');
+      return;
+    }
+    clearHistoryRoute();
+    const line = entry.positions.map(p => [p.lat, p.lng]);
+    historyRoute = L.polyline(line, { color: '#4C6A3C', weight: 4, opacity: 0.9, dashArray: '6,4' }).addTo(map);
+    const start = line[0];
+    const end = line[line.length - 1];
+    historyRouteMarkers.push(L.circleMarker(start, { color: '#4C6A3C', radius: 5, fillOpacity: 1 }).addTo(map).bindPopup('Départ'));
+    historyRouteMarkers.push(L.circleMarker(end, { color: '#C1714F', radius: 6, fillOpacity: 1 }).addTo(map).bindPopup('Arrivée'));
+    const bounds = L.latLngBounds(line);
+    map.fitBounds(bounds.pad(0.2));
+    showToast('Trace affichée sur la carte');
+  }
+
+  function shareHistoryEntry(index) {
+    const history = loadTrackingStorage();
+    const entry = history.entries[index];
+    if (!entry) {
+      showToast('Impossible de partager cette sortie.');
+      return;
+    }
+    const user = getActiveMapUser();
+    const userName = user?.displayName || 'INVITÉ';
+    const canvas = document.createElement('canvas');
+    const width = 1200;
+    const height = 675;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    const background = ctx.createLinearGradient(0, 0, width, height);
+    background.addColorStop(0, '#051918');
+    background.addColorStop(0.45, '#0f3c2e');
+    background.addColorStop(1, '#142c3f');
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, width, height);
+
+    const glow = ctx.createRadialGradient(300, 160, 0, 300, 160, 260);
+    glow.addColorStop(0, 'rgba(95, 214, 157, 0.25)');
+    glow.addColorStop(1, 'rgba(95, 214, 157, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 32;
+    ctx.fillStyle = '#0d1f19';
+    roundRect(50, 50, width - 100, height - 100, 36);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 48px Inter, sans-serif';
+    ctx.fillText('EXPLOIT DE ROUTE', 90, 120);
+
+    ctx.font = '600 26px Inter, sans-serif';
+    ctx.fillStyle = '#b0f3c7';
+    ctx.fillText(`Par ${userName}`, 90, 160);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 90px Inter, sans-serif';
+    ctx.fillText(`${entry.distance.toFixed(1)} km`, 90, 270);
+
+    ctx.font = '600 32px Inter, sans-serif';
+    ctx.fillStyle = '#8de2a4';
+    ctx.fillText(`${entry.avgSpeed.toFixed(1)} km/h`, 90, 340);
+    ctx.fillStyle = '#b4c8d0';
+    ctx.font = '500 24px Inter, sans-serif';
+    ctx.fillText('Vitesse moyenne', 90, 375);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '600 32px Inter, sans-serif';
+    ctx.fillText(`${entry.maxSpeed.toFixed(1)} km/h`, 90, 435);
+    ctx.fillStyle = '#b4c8d0';
+    ctx.font = '500 24px Inter, sans-serif';
+    ctx.fillText('Vitesse max', 90, 470);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '600 32px Inter, sans-serif';
+    ctx.fillText(formatDuration(entry.duration), 90, 530);
+    ctx.fillStyle = '#b4c8d0';
+    ctx.font = '500 24px Inter, sans-serif';
+    ctx.fillText('Durée totale', 90, 565);
+
+    ctx.fillStyle = '#8a8a8a';
+    ctx.font = '500 22px Inter, sans-serif';
+    ctx.fillText(entry.date, 90, 615);
+
+    const panelX = 680;
+    const panelY = 180;
+    const panelW = 430;
+    const panelH = 390;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.28)';
+    ctx.shadowBlur = 28;
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    roundRect(panelX, panelY, panelW, panelH, 28);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 2;
+    roundRect(panelX, panelY, panelW, panelH, 28);
+    ctx.stroke();
+
+    ctx.fillStyle = '#d9f9e4';
+    ctx.font = '700 32px Inter, sans-serif';
+    ctx.fillText('TRACE ÉPIQUE', panelX + 30, panelY + 50);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '500 22px Inter, sans-serif';
+    ctx.fillText(`Distance`, panelX + 30, panelY + 100);
+    ctx.font = '700 36px Inter, sans-serif';
+    ctx.fillText(`${entry.distance.toFixed(1)} km`, panelX + 30, panelY + 145);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '500 22px Inter, sans-serif';
+    ctx.fillText(`Moyenne`, panelX + 30, panelY + 200);
+    ctx.font = '700 36px Inter, sans-serif';
+    ctx.fillText(`${entry.avgSpeed.toFixed(1)} km/h`, panelX + 30, panelY + 245);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '500 22px Inter, sans-serif';
+    ctx.fillText(`Max`, panelX + 30, panelY + 300);
+    ctx.font = '700 36px Inter, sans-serif';
+    ctx.fillText(`${entry.maxSpeed.toFixed(1)} km/h`, panelX + 30, panelY + 345);
+
+    ctx.fillStyle = '#6ee0a2';
+    ctx.font = '800 20px Inter, sans-serif';
+    ctx.fillText('CELESTE', panelX + 260, panelY + 50);
+
+    const routeX = panelX + 40;
+    const routeY = panelY + panelH - 170;
+    const routeW = panelW - 80;
+    const routeH = 120;
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    roundRect(routeX, routeY, routeW, routeH, 20);
+    ctx.fill();
+
+    const positions = entry.positions || [];
+    if (positions.length >= 2) {
+      const lats = positions.map(p => p.lat);
+      const lngs = positions.map(p => p.lng);
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+      const margin = 20;
+      const availableW = routeW - margin * 2;
+      const availableH = routeH - margin * 2;
+      ctx.save();
+      ctx.beginPath();
+      positions.forEach((p, i) => {
+        const x = routeX + margin + ((p.lng - minLng) / (maxLng - minLng || 1)) * availableW;
+        const y = routeY + routeH - margin - ((p.lat - minLat) / (maxLat - minLat || 1)) * availableH;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#6ce6ae';
+      ctx.lineWidth = 8;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '500 18px Inter, sans-serif';
+      ctx.fillText('Aperçu du parcours', routeX, routeY - 12);
+    } else {
+      ctx.fillStyle = '#9bb7a4';
+      ctx.font = '500 21px Inter, sans-serif';
+      ctx.fillText('Pas de trace visible', routeX + 30, routeY + 90);
+    }
+
+    ctx.fillStyle = '#eef5ea';
+    ctx.font = '700 24px Inter, sans-serif';
+    ctx.fillText('RASSEMBLE TON EXPLOIT', 90, height - 40);
+
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `straval-exploit-${entry.date.replace(/\//g,'-')}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('Image prête ! Le téléchargement commence.');
+  }
+
+  function renderTrackingHistory() {
+    const history = loadTrackingStorage();
+    const list = document.getElementById('historyList');
+    if (!history.entries.length) {
+      list.innerHTML = '<div class="history-empty">Aucune sortie enregistrée pour le moment.</div>';
+      return;
+    }
+    const reversed = history.entries.slice().reverse();
+    list.innerHTML = reversed.map((entry, idx) => {
+      const actualIndex = history.entries.length - 1 - idx;
+      return `
+      <div class="history-entry" onclick="showHistoryRoute(${actualIndex})">
+        <div>
+          <strong>${entry.distance.toFixed(2)} km — ${entry.maxSpeed.toFixed(1)} km/h</strong>
+          <span>${entry.date} · ${formatDuration(entry.duration)} · Moyenne ${entry.avgSpeed.toFixed(1)} km/h</span>
+        </div>
+        <div class="history-entry-actions">
+          <button type="button" class="share-btn" onclick="event.stopPropagation(); shareHistoryEntry(${actualIndex})">Partager l'exploit</button>
+        </div>
+      </div>
+    `;
+    }).join('');
+  }
+
+  function setTrackerTab(tab) {
+    document.getElementById('tabLive').classList.toggle('active', tab === 'live');
+    document.getElementById('tabHistory').classList.toggle('active', tab === 'history');
+    document.querySelector('.tracker-live-content').classList.toggle('active', tab === 'live');
+    document.querySelector('.tracker-history-content').classList.toggle('active', tab === 'history');
+  }
+
+  auth.onAuthStateChanged(user => {
+    currentMapUser = user;
+    currentMapGuest = user ? null : getGuestUser();
+    const status = document.getElementById('trackerLoginStatus');
+    if (user) {
+      status.textContent = `Connecté : ${user.displayName || user.email}`;
+    } else if (currentMapGuest) {
+      status.textContent = `Mode invité : ${currentMapGuest.displayName}`;
+    } else {
+      status.textContent = 'Connecte-toi sur login.html pour synchroniser ton activité';
+    }
+    renderTrackingHistory();
+  });
+
+  const map = L.map('map', { zoomControl: false }).setView([46.5, 2.5], 6);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CARTO', maxZoom: 19
+  }).addTo(map);
+  L.control.zoom({ position: 'topright' }).addTo(map);
+
+  let trackLine = null;
+  const tracker = {
+    active: false,
+    watchId: null,
+    positions: [],
+    totalKm: 0,
+    totalSeconds: 0,
+    maxSpeed: 0,
+    startTimestamp: null,
+    lastTimestamp: null,
+    accelMax: 0,
+    currentSpeed: 0
+  };
+  const trackerMarkers = { start: null, current: null };
+  let historyRoute = null;
+  let historyRouteMarkers = [];
+  const sensorSupported = typeof DeviceMotionEvent !== 'undefined';
+
+  function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function formatDuration(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+  }
+
+  function updateTrackerUI() {
+    document.getElementById('liveDistance').textContent = `${tracker.totalKm.toFixed(2)} km`;
+    document.getElementById('liveAvgSpeed').textContent = `${tracker.totalSeconds > 0 ? (tracker.totalKm / (tracker.totalSeconds / 3600)).toFixed(1) : 0} km/h`;
+    document.getElementById('liveMaxSpeed').textContent = `${tracker.maxSpeed.toFixed(1)} km/h`;
+    document.getElementById('liveTime').textContent = formatDuration(tracker.totalSeconds);
+    const sensorText = tracker.accelMax > 0 ? `Accélération max ${tracker.accelMax.toFixed(1)} m/s²` : (sensorSupported ? 'Capteurs détectés, en attente...' : 'Capteurs non disponibles');
+    document.getElementById('trackerSensor').textContent = sensorText;
+  }
+
+  function handleMotion(event) {
+    const motion = event.accelerationIncludingGravity || event.acceleration;
+    if (!motion) return;
+    const accel = Math.sqrt((motion.x || 0) ** 2 + (motion.y || 0) ** 2 + (motion.z || 0) ** 2);
+    if (accel > tracker.accelMax) tracker.accelMax = accel;
+    updateTrackerUI();
+  }
+
+  async function requestMotion() {
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      try {
+        const permission = await DeviceMotionEvent.requestPermission();
+        if (permission === 'granted') window.addEventListener('devicemotion', handleMotion);
+      } catch (err) {
+        console.warn('Permission capteurs refusée', err);
+      }
+    } else {
+      window.addEventListener('devicemotion', handleMotion);
+    }
+  }
+
+  function handlePosition(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const timestamp = pos.timestamp;
+    if (!tracker.startTimestamp) {
+      tracker.startTimestamp = timestamp;
+      tracker.lastTimestamp = timestamp;
+    }
+    const prev = tracker.positions.length ? tracker.positions[tracker.positions.length - 1] : null;
+    if (prev) {
+      const deltaSeconds = (timestamp - tracker.lastTimestamp) / 1000;
+      const dist = haversine(prev.lat, prev.lng, lat, lng);
+      if (deltaSeconds > 0) {
+        tracker.totalKm += dist;
+        tracker.totalSeconds += deltaSeconds;
+        tracker.currentSpeed = pos.coords.speed > 0 ? pos.coords.speed : (dist / deltaSeconds) * 3600;
+        tracker.maxSpeed = Math.max(tracker.maxSpeed, tracker.currentSpeed);
+      }
+    } else {
+      tracker.currentSpeed = pos.coords.speed || 0;
+    }
+    tracker.lastTimestamp = timestamp;
+    tracker.positions.push({ lat, lng, timestamp });
+    const point = [lat, lng];
+    if (!trackLine) {
+      trackLine = L.polyline([point], { color: '#C1714F', weight: 5, opacity: 0.9 }).addTo(map);
+    } else {
+      trackLine.addLatLng(point);
+    }
+    if (!trackerMarkers.start) {
+      trackerMarkers.start = L.circleMarker(point, { color: '#4C6A3C', radius: 6, fillOpacity: 0.9 }).addTo(map).bindPopup('Départ');
+    }
+    if (trackerMarkers.current) {
+      trackerMarkers.current.setLatLng(point);
+    } else {
+      trackerMarkers.current = L.circleMarker(point, { color: '#C1714F', radius: 8, fillOpacity: 1 }).addTo(map);
+    }
+    map.flyTo(point, 16, { animate: true, duration: 0.8 });
+    updateTrackerUI();
+  }
+
+  function startTracking() {
+    if (tracker.active) return;
+    if (!navigator.geolocation) return showToast('Géolocalisation non disponible');
+    tracker.active = true;
+    tracker.positions = [];
+    tracker.totalKm = 0;
+    tracker.totalSeconds = 0;
+    tracker.maxSpeed = 0;
+    tracker.currentSpeed = 0;
+    tracker.accelMax = 0;
+    tracker.startTimestamp = null;
+    tracker.lastTimestamp = null;
+    if (trackLine) { map.removeLayer(trackLine); trackLine = null; }
+    if (trackerMarkers.start) { map.removeLayer(trackerMarkers.start); trackerMarkers.start = null; }
+    if (trackerMarkers.current) { map.removeLayer(trackerMarkers.current); trackerMarkers.current = null; }
+    document.getElementById('startTrackBtn').style.display = 'none';
+    document.getElementById('stopTrackBtn').style.display = 'inline-flex';
+    tracker.watchId = navigator.geolocation.watchPosition(handlePosition, err => showToast('Erreur position : ' + err.message), { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
+    if (sensorSupported) requestMotion();
+    updateTrackerUI();
+    showToast('✅ Suivi démarré');
+  }
+
+  function stopTracking() {
+    if (!tracker.active) return;
+    tracker.active = false;
+    if (tracker.watchId !== null) navigator.geolocation.clearWatch(tracker.watchId);
+    tracker.watchId = null;
+    window.removeEventListener('devicemotion', handleMotion);
+    document.getElementById('startTrackBtn').style.display = 'inline-flex';
+    document.getElementById('stopTrackBtn').style.display = 'none';
+    saveLatestGuestTrack();
+    showToast('⏸ Suivi arrêté');
+  }
+  function makeIcon(emoji, selected = false) {
+    return L.divIcon({
+      html: `<div style="background:${selected ? '#9B5A3A' : '#C1714F'};width:${selected?42:36}px;height:${selected?42:36}px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid white;box-shadow:0 3px 12px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;transition:all 0.2s">
+        <span style="transform:rotate(45deg);font-size:${selected?1.1:0.95}rem">${emoji}</span></div>`,
+      iconSize: [selected ? 42 : 36, selected ? 42 : 36],
+      iconAnchor: [selected ? 21 : 18, selected ? 42 : 36],
+      className: ''
+    });
+  }
+
+  function popupHTML(s) {
+    const colors = { foret:'linear-gradient(135deg,#2d4a1e,#4C6A3C)', montagne:'linear-gradient(135deg,#3a3025,#6b5a45)', riviere:'linear-gradient(135deg,#1a3a4a,#2a7a8a)', plage:'linear-gradient(135deg,#8B6914,#c4a43a)', prairie:'linear-gradient(135deg,#3a5a1a,#7aaa3a)' };
+    return `<div class="popup-img" style="background:${colors[s.type]}">${s.emoji}</div>
+      <div class="popup-body">
+        <div class="popup-name">${s.name}</div>
+        <div class="popup-loc">📍 ${s.loc}</div>
+        <div style="font-size:0.82rem;color:var(--text-light);margin:0.45rem 0;">GPS : ${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}</div>
+        <div style="display:flex;gap:0.45rem;margin-bottom:0.6rem;">
+          <a class="popup-btn" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}" target="_blank">Google Maps</a>
+          <a class="popup-btn" href="https://www.waze.com/ul?ll=${s.lat},${s.lng}&navigate=yes" target="_blank">Waze</a>
+        </div>
+        <div class="popup-footer">
+          <span class="popup-note">⭐ ${s.note}</span>
+          <button class="popup-btn" onclick="selectSpot(${s.id})">Détails</button>
+        </div>
+      </div>`;
+  }
+
+  // Placer les marqueurs
+  SPOTS.forEach(s => {
+    const marker = L.marker([s.lat, s.lng], { icon: makeIcon(s.emoji) })
+      .addTo(map)
+      .bindPopup(popupHTML(s), { className:'custom-popup', maxWidth:220 });
+    marker.on('click', () => selectSpot(s.id));
+    markers[s.id] = marker;
+  });
+
+  function selectSpot(id) {
+    if (selectedSpotId) markers[selectedSpotId]?.setIcon(makeIcon(SPOTS.find(s=>s.id===selectedSpotId)?.emoji));
+    selectedSpotId = id;
+    const s = SPOTS.find(s => s.id === id);
+    if (!s) return;
+    markers[id]?.setIcon(makeIcon(s.emoji, true));
+    map.flyTo([s.lat, s.lng], 13, { animate: true, duration: 1 });
+    markers[id]?.openPopup();
+    document.querySelectorAll('.spot-item').forEach(el => el.classList.toggle('selected', parseInt(el.dataset.id) === id));
+    document.querySelector(`.spot-item[data-id="${id}"]`)?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+
+  // Rendu sidebar
+  function renderSidebar(filter = 'all', search = '') {
+    const list = document.getElementById('spotsList');
+    const filtered = SPOTS.filter(s =>
+      (filter === 'all' || s.type === filter) &&
+      (search === '' || s.name.toLowerCase().includes(search.toLowerCase()) || s.loc.toLowerCase().includes(search.toLowerCase()))
+    );
+    const colors = { foret:'thumb-foret', montagne:'thumb-montagne', riviere:'thumb-riviere', plage:'thumb-plage', prairie:'thumb-prairie' };
+    list.innerHTML = filtered.length === 0 ? `<div style="padding:2rem;text-align:center;color:var(--text-light);font-size:0.9rem">Aucun spot trouvé</div>` :
+      filtered.map(s => `
+        <div class="spot-item${s.id===selectedSpotId?' selected':''}" data-id="${s.id}" onclick="selectSpot(${s.id})">
+          <div class="spot-thumb ${colors[s.type]}">${s.emoji}</div>
+          <div class="spot-info">
+            <div class="spot-name">${s.name}</div>
+            <div class="spot-meta">📍 ${s.loc}</div>
+            <div class="spot-tags">
+              <span class="tag tag-note">⭐ ${s.note}</span>
+              ${s.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+            </div>
+          </div>
+        </div>`).join('');
+  }
+
+  renderSidebar();
+  renderTrackingHistory();
+
+  // Filtres
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeFilter = chip.dataset.filter;
+      renderSidebar(activeFilter, document.getElementById('searchInput').value);
+    });
+  });
+
+  // Search
+  document.getElementById('searchInput').addEventListener('input', e => {
+    renderSidebar(activeFilter, e.target.value);
+  });
+
+  // Localisation
+  document.getElementById('locateBtn').addEventListener('click', () => {
+    if (!navigator.geolocation) return showToast('Géolocalisation non disponible');
+    showToast('📍 Localisation en cours…');
+    navigator.geolocation.getCurrentPosition(pos => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      map.flyTo([lat, lng], 13, { animate: true, duration: 1.5 });
+      L.circle([lat, lng], { radius: 200, color: '#C1714F', fillColor: '#E8A882', fillOpacity: 0.25 }).addTo(map);
+      L.marker([lat, lng], { icon: L.divIcon({ html:'<div style="background:#C1714F;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>', iconSize:[16,16], iconAnchor:[8,8], className:'' }) }).addTo(map).bindPopup('📍 Vous êtes ici').openPopup();
+      showToast('✅ Position trouvée !');
+    }, () => showToast('❌ Accès à la position refusé'));
+  });
+
+  // Modal ajout spot
+  const modal = document.getElementById('modalOverlay');
+  document.getElementById('addSpotBtn').addEventListener('click', () => {
+    // Lors de l'ouverture, tenter d'obtenir la position pour pré-remplir les coords et informer l'utilisateur
+    if (!navigator.geolocation) {
+      modal.classList.add('open');
+      document.getElementById('spotLocalCheck').textContent = 'Géolocalisation non disponible — impossible de vérifier si tu es sur place.';
+      return;
+    }
+    document.getElementById('spotLocalCheck').textContent = '📍 Vérification de ta position…';
+    // Utiliser watchPosition pour actualiser la position tant que la modal est ouverte
+    const latField = document.getElementById('spotLat');
+    const lngField = document.getElementById('spotLng');
+    if (watchIdForModal !== null) navigator.geolocation.clearWatch(watchIdForModal);
+    watchIdForModal = navigator.geolocation.watchPosition(pos => {
+      const ulat = pos.coords.latitude;
+      const ulng = pos.coords.longitude;
+      latField.value = ulat.toFixed(5);
+      lngField.value = ulng.toFixed(5);
+      confirmedLat = ulat;
+      confirmedLng = ulng;
+      lastPositionTimestamp = Date.now();
+      spotPositionConfirmed = true;
+      document.getElementById('submitSpot').disabled = false;
+      document.getElementById('spotLocalCheck').textContent = '✅ Position détectée et actualisée.';
+      modal.classList.add('open');
+    }, err => {
+      modal.classList.add('open');
+      document.getElementById('spotLocalCheck').textContent = '❌ Autorise la géolocalisation pour proposer un spot.';
+      spotPositionConfirmed = false;
+      document.getElementById('submitSpot').disabled = true;
+    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+  });
+  document.getElementById('modalClose').addEventListener('click', () => {
+    modal.classList.remove('open');
+    spotPositionConfirmed = false;
+    confirmedLat = null; confirmedLng = null;
+    document.getElementById('submitSpot').disabled = true;
+    document.getElementById('spotLocalCheck').textContent = '📍 Autorise la géolocalisation ; nous vérifierons que tu es sur place lors de la validation.';
+    if (watchIdForModal !== null) { navigator.geolocation.clearWatch(watchIdForModal); watchIdForModal = null; }
+  });
+  modal.addEventListener('click', e => { if (e.target === modal) {
+      modal.classList.remove('open');
+      spotPositionConfirmed = false;
+      confirmedLat = null; confirmedLng = null;
+      document.getElementById('submitSpot').disabled = true;
+      document.getElementById('spotLocalCheck').textContent = '📍 Autorise la géolocalisation ; nous vérifierons que tu es sur place lors de la validation.';
+      if (watchIdForModal !== null) { navigator.geolocation.clearWatch(watchIdForModal); watchIdForModal = null; }
+    }
+  });
+
+  document.getElementById('startTrackBtn').addEventListener('click', startTracking);
+  document.getElementById('stopTrackBtn').addEventListener('click', stopTracking);
+  document.getElementById('tabLive').addEventListener('click', () => setTrackerTab('live'));
+  document.getElementById('tabHistory').addEventListener('click', () => setTrackerTab('history'));
+  document.getElementById('submitSpot').addEventListener('click', () => {
+    const name = document.getElementById('spotNameInput').value.trim();
+    let lat = parseFloat(document.getElementById('spotLat').value);
+    let lng = parseFloat(document.getElementById('spotLng').value);
+    const type = document.getElementById('spotTypeInput').value;
+    const region = document.getElementById('spotRegionInput').value.trim() || 'France';
+    const desc = document.getElementById('spotDescInput').value.trim();
+    const emojis = { foret:'🌲', montagne:'⛰️', riviere:'💧', plage:'🏖️', prairie:'🌾' };
+    if (!name) return showToast('❌ Donne un nom à ton spot !');
+
+    // S'assurer que la position a été confirmée lors de l'ouverture (remplissage automatique imposé)
+    if (!spotPositionConfirmed) return showToast('❌ Position non confirmée — ouvre la modal et autorise la géolocalisation.');
+    if (!navigator.geolocation) return showToast('Géolocalisation non disponible — impossible de proposer un spot.');
+    showToast('📍 Vérification finale de ta position…');
+    navigator.geolocation.getCurrentPosition(pos => {
+      const userLat = pos.coords.latitude;
+      const userLng = pos.coords.longitude;
+      // Vérifier la proximité par rapport à la position confirmée
+      const distanceKm = haversine(userLat, userLng, confirmedLat || lat, confirmedLng || lng);
+      const distanceMeters = Math.round(distanceKm * 1000);
+      if (distanceMeters > MAX_DISTANCE_METERS) {
+        return showToast(`❌ Tu dois être sur place pour proposer ce spot (à ${distanceMeters} m).`);
+      }
+      // Forcer l'usage des coordonnées confirmées (empêche modification manuelle)
+      lat = confirmedLat || lat;
+      lng = confirmedLng || lng;
+      const newSpot = { id: SPOTS.length + 1, name, loc: region, type, emoji: emojis[type], note: '✦ Nouveau', lat, lng, desc: desc || 'Nouveau spot communautaire.', tags:['Nouveau'] };
+      SPOTS.push(newSpot);
+      const marker = L.marker([lat, lng], { icon: makeIcon(emojis[type]) }).addTo(map).bindPopup(popupHTML(newSpot), { className:'custom-popup', maxWidth:220 });
+      marker.on('click', () => selectSpot(newSpot.id));
+      markers[newSpot.id] = marker;
+      renderSidebar(activeFilter, document.getElementById('searchInput').value);
+      modal.classList.remove('open');
+      // reset state and stop watching position
+      spotPositionConfirmed = false;
+      if (watchIdForModal !== null) { navigator.geolocation.clearWatch(watchIdForModal); watchIdForModal = null; }
+      confirmedLat = null; confirmedLng = null;
+      document.getElementById('submitSpot').disabled = true;
+      showToast('🌿 Spot proposé avec succès !');
+      map.flyTo([lat, lng], 13);
+    }, err => {
+      showToast('❌ Impossible d’obtenir ta position — autorise la géolocalisation.');
+    }, { enableHighAccuracy: true, timeout: 10000 });
+  });
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // Nav toggle
+  document.getElementById('navToggle').addEventListener('click', () => {
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+</script>
+</body>
+</html>

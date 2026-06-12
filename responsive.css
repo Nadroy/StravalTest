@@ -1,0 +1,48 @@
+.is-mobile body, .is-mobile html {
+  -webkit-text-size-adjust: 100%;
+}
+/* Adjust base sizing for small screens */
+body.is-mobile, .is-mobile body {
+  font-size: 16px !important;
+}
+
+/* Make primary actions easier to tap */
+.is-mobile .btn-primary, .is-mobile .btn-secondary, .is-mobile .btn-spot, .is-mobile .btn-submit, .is-mobile .btn-nav {
+  width: 100% !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+/* Ensure header spacing is compact on phones */
+.is-mobile header { padding: 0 1rem !important; }
+.is-mobile nav { height: 56px !important; }
+
+/* Show nav-toggle on small screens if hidden */
+.is-mobile .nav-toggle { display: flex !important; }
+.is-mobile .nav-links { display: none !important; }
+.is-mobile .nav-links.open { display: flex !important; position: absolute; top: 56px; left: 0; right: 0; background: #F5EDE0; padding: 1rem; z-index: 999; flex-direction: column; }
+
+/* Make touch targets bigger in lists */
+.is-mobile .spot-item, .is-mobile .spot-card, .is-mobile .spot-footer { touch-action: manipulation; }
+
+/* Reduce large fixed heights that break mobile viewports */
+.is-mobile .hero { min-height: 60vh !important; padding: 2rem 1rem !important; }
+.is-mobile .spot-img, .is-mobile .spot-img-bg { height: 140px !important; }
+.is-mobile .spot-img { font-size: 3.2rem !important; }
+
+/* Sidebar -> bottom sheet on mobile */
+.is-mobile .map-layout { flex-direction: column-reverse !important; }
+.is-mobile .sidebar { width: 100% !important; height: 44vh !important; border-right: none !important; border-top: 1px solid rgba(232,217,192,0.6) !important; }
+.is-mobile #map { min-height: 56vw !important; }
+
+/* Modal full width on small screens */
+.is-mobile .modal { width: 96% !important; max-width: 720px !important; border-radius: 1rem !important; }
+
+/* Improve readability for long text */
+.is-mobile .section-sub, .is-mobile .spot-desc, .is-mobile .modal-desc { font-size: 0.98rem !important; }
+
+/* Small tweaks for the Stravaaaal page */
+.is-mobile .wrap { padding: 1rem !important; max-width: 100% !important; }
+
+/* Utility: ensure overflow issues are handled */
+.is-mobile body { overflow-x: hidden !important; }

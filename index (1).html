@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>STRAVAL — Reconnecte-toi à la nature, ensemble.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --terra: #C1714F; --terra-dark: #9B5A3A; --terra-light: #E8A882;
+      --green: #4C6A3C; --green-light: #7A9A65;
+      --cream: #F5EDE0; --cream-dark: #E8D9C0;
+      --text: #2C2015; --text-light: #6B5744; --white: #FFFDF8;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--text); line-height: 1.6; overflow-x: hidden; overflow-y: auto; }
+    body.splash-active { overflow: hidden; }
+
+    /* HEADER */
+    header { position: sticky; top: 0; z-index: 100; background: rgba(245,237,224,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid var(--cream-dark); padding: 0 2rem; }
+    nav { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: flex-start; gap: 1rem; height: 70px; }
+    .logo { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; }
+    .logo-icon { width: 38px; height: 38px; }
+    .logo-text { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; color: var(--terra-dark); letter-spacing: 0.05em; }
+    .logo-text span { color: var(--green); }
+    .mode-switch { display: flex; align-items: center; gap: 0.6rem; margin-left: 1.2rem; }
+    .switch { position: relative; width: 48px; height: 24px; display: inline-block; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; border-radius: 999px; background: rgba(76,106,60,0.15); transition: background 0.3s ease; }
+    .slider::before { content: '' ; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.15); transition: transform 0.3s ease; }
+    .switch input:checked + .slider { background: linear-gradient(135deg, #C1714F, #E8A882); }
+    .switch input:checked + .slider::before { transform: translateX(24px); }
+    .mode-label { font-size: 0.9rem; color: var(--text-light); white-space: nowrap; max-width: 12rem; overflow: hidden; text-overflow: ellipsis; }
+    .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; margin-left: auto; }
+    .nav-links a { text-decoration: none; font-size: 0.95rem; font-weight: 500; color: var(--text-light); transition: color 0.2s; }
+    .nav-links a:hover { color: var(--terra); }
+    .btn-nav { background: var(--terra); color: var(--white) !important; padding: 0.5rem 1.2rem; border-radius: 2rem; }
+    .btn-nav:hover { background: var(--terra-dark) !important; }
+    .nav-toggle { display: none; background: none; border: none; cursor: pointer; flex-direction: column; gap: 5px; }
+    .nav-toggle span { display: block; width: 25px; height: 2px; background: var(--text); border-radius: 2px; }
+
+    /* HERO */
+    .hero { min-height: 90vh; display: flex; align-items: center; position: relative; overflow: hidden; background: linear-gradient(135deg, #2C1A0E 0%, #3D2B1A 40%, #4C6A3C 100%); }
+    .hero-bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 20% 50%, rgba(193,113,79,0.25) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(76,106,60,0.3) 0%, transparent 50%); }
+    .hero-content { max-width: 1200px; margin: 0 auto; padding: 4rem 2rem; position: relative; z-index: 2; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(193,113,79,0.2); border: 1px solid rgba(193,113,79,0.4); color: var(--terra-light); padding: 0.4rem 1rem; border-radius: 2rem; font-size: 0.85rem; font-weight: 500; margin-bottom: 1.5rem; animation: fadeInUp 0.6s ease both; }
+    .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.4rem, 5vw, 4.2rem); font-weight: 700; color: var(--white); line-height: 1.2; max-width: 700px; margin-bottom: 1.2rem; animation: fadeInUp 0.6s 0.1s ease both; }
+    .hero h1 em { font-style: normal; color: var(--terra-light); }
+    .hero > .hero-content > p { font-size: 1.15rem; color: rgba(255,253,248,0.75); max-width: 520px; margin-bottom: 2.5rem; font-weight: 300; animation: fadeInUp 0.6s 0.2s ease both; }
+    .hero-cta { display: flex; gap: 1rem; flex-wrap: wrap; animation: fadeInUp 0.6s 0.3s ease both; }
+    .btn-primary { background: var(--terra); color: var(--white); padding: 0.85rem 2rem; border-radius: 3rem; text-decoration: none; font-weight: 600; transition: background 0.2s, transform 0.2s; box-shadow: 0 4px 20px rgba(193,113,79,0.4); }
+    .btn-primary:hover { background: var(--terra-dark); transform: translateY(-2px); }
+    .btn-secondary { background: transparent; color: var(--white); padding: 0.85rem 2rem; border-radius: 3rem; text-decoration: none; font-weight: 500; border: 1.5px solid rgba(255,253,248,0.4); transition: border-color 0.2s, background 0.2s, transform 0.2s; }
+    .btn-secondary:hover { border-color: var(--white); background: rgba(255,253,248,0.08); transform: translateY(-2px); }
+    .hero-stats { display: flex; gap: 2.5rem; margin-top: 4rem; flex-wrap: wrap; animation: fadeInUp 0.6s 0.4s ease both; }
+    .stat-num { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: var(--terra-light); }
+    .stat-label { font-size: 0.85rem; color: rgba(255,253,248,0.6); font-weight: 300; }
+
+    /* SECTIONS */
+    section { padding: 5rem 2rem; }
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+    .section-tag { display: inline-block; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--terra); margin-bottom: 0.8rem; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 700; color: var(--text); margin-bottom: 1rem; line-height: 1.25; }
+    .section-sub { font-size: 1.05rem; color: var(--text-light); max-width: 560px; font-weight: 300; }
+    .section-header { margin-bottom: 3.5rem; }
+
+    /* HOW */
+    .how { background: var(--white); }
+    .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 2rem; }
+    .step-card { background: var(--cream); border-radius: 1.5rem; padding: 2rem; border: 1px solid var(--cream-dark); transition: transform 0.25s, box-shadow 0.25s; }
+    .step-card:hover { transform: translateY(-6px); box-shadow: 0 12px 40px rgba(107,51,43,0.1); }
+    .step-num { font-family: 'Playfair Display', serif; font-size: 3.5rem; font-weight: 700; color: var(--cream-dark); line-height: 1; margin-bottom: 1rem; }
+    .step-icon { width: 52px; height: 52px; background: var(--terra); border-radius: 1rem; display: flex; align-items: center; justify-content: center; margin-bottom: 1.2rem; }
+    .step-icon svg { width: 26px; height: 26px; }
+    .step-card h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 600; color: var(--text); margin-bottom: 0.6rem; }
+    .step-card p { font-size: 0.95rem; color: var(--text-light); font-weight: 300; }
+
+    /* SPOTS */
+    .spots { background: var(--cream); }
+    .spots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.8rem; }
+    .spot-card { background: var(--white); border-radius: 1.5rem; overflow: hidden; border: 1px solid var(--cream-dark); transition: transform 0.25s, box-shadow 0.25s; }
+    .spot-card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(44,32,21,0.12); }
+    .spot-img { height: 180px; position: relative; overflow: hidden; }
+    .spot-img-bg { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 4rem; }
+    .foret { background: linear-gradient(135deg, #2d4a1e, #4C6A3C); }
+    .montagne { background: linear-gradient(135deg, #3a3025, #6b5a45); }
+    .riviere { background: linear-gradient(135deg, #1a3a4a, #2a7a8a); }
+    .spot-badge { position: absolute; top: 1rem; left: 1rem; background: rgba(0,0,0,0.45); color: white; font-size: 0.75rem; padding: 0.3rem 0.8rem; border-radius: 2rem; backdrop-filter: blur(6px); }
+    .spot-body { padding: 1.4rem; }
+    .spot-name { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 600; color: var(--text); margin-bottom: 0.3rem; }
+    .spot-loc { font-size: 0.85rem; color: var(--text-light); display: flex; align-items: center; gap: 0.3rem; margin-bottom: 0.9rem; }
+    .spot-footer { display: flex; align-items: center; justify-content: space-between; }
+    .stars { color: #D4891A; font-size: 0.95rem; }
+    .star-score { font-size: 0.85rem; font-weight: 600; color: var(--text); margin-left: 0.4rem; }
+    .btn-spot { background: var(--green); color: white; padding: 0.45rem 1.1rem; border-radius: 2rem; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: background 0.2s; }
+    .btn-spot:hover { background: var(--green-light); }
+
+    /* COMMUNITY */
+    .community { background: var(--white); }
+    .community-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+    .community-text p { font-size: 1rem; color: var(--text-light); font-weight: 300; margin-bottom: 2rem; line-height: 1.8; }
+    .btn-cta { display: inline-block; background: var(--terra); color: var(--white); padding: 0.85rem 2rem; border-radius: 3rem; text-decoration: none; font-weight: 600; transition: background 0.2s, transform 0.2s; }
+    .btn-cta:hover { background: var(--terra-dark); transform: translateY(-2px); }
+    .avatars-panel { background: var(--cream); border-radius: 2rem; padding: 2rem; border: 1px solid var(--cream-dark); }
+    .avatar-row { display: flex; align-items: center; gap: 1rem; padding: 0.9rem 0; border-bottom: 1px solid var(--cream-dark); }
+    .avatar-row:last-child { border-bottom: none; }
+    .avatar { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: white; flex-shrink: 0; }
+    .av1 { background: linear-gradient(135deg, #C1714F, #9B5A3A); }
+    .av2 { background: linear-gradient(135deg, #4C6A3C, #2d4a1e); }
+    .av3 { background: linear-gradient(135deg, #8B6914, #5a4510); }
+    .av4 { background: linear-gradient(135deg, #5a3a6e, #3a2248); }
+    .avatar-info { flex: 1; }
+    .avatar-name { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    .avatar-spots { font-size: 0.8rem; color: var(--text-light); font-weight: 300; }
+    .avatar-rating { font-size: 0.85rem; font-weight: 700; color: var(--terra); }
+
+    /* FOOTER */
+    footer { background: #1E1409; color: rgba(255,253,248,0.6); padding: 3rem 2rem 2rem; }
+    .footer-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 3rem; }
+    .footer-brand .logo-text { color: #E8A882; }
+    .footer-brand .logo-text span { color: #7A9A65; }
+    .footer-tagline { margin-top: 0.8rem; font-size: 0.9rem; font-weight: 300; line-height: 1.7; }
+    .footer-col h4 { color: rgba(255,253,248,0.9); font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+    .footer-col a { display: block; color: rgba(255,253,248,0.55); text-decoration: none; font-size: 0.9rem; font-weight: 300; margin-bottom: 0.6rem; transition: color 0.2s; }
+    .footer-col a:hover { color: #E8A882; }
+    .footer-bottom { max-width: 1200px; margin: 2rem auto 0; padding-top: 1.5rem; border-top: 1px solid rgba(255,253,248,0.1); display: flex; justify-content: space-between; font-size: 0.82rem; flex-wrap: wrap; gap: 0.5rem; }
+
+    .splash {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, rgba(255,255,255,0.12), rgba(245,237,224,0.95) 35%, rgba(193,113,79,0.95));
+      z-index: 999;
+      overflow: hidden;
+      transition: opacity 0.8s ease, visibility 0.8s ease;
+    }
+    .splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .splash-inner {
+      text-align: center;
+      color: var(--text);
+      padding: 2rem;
+      max-width: 520px;
+      width: min(90vw, 520px);
+      animation: popIn 0.7s ease both;
+    }
+    .splash-logo-icon { width: 68px; height: 68px; margin: 0 auto 1rem; display: block; }
+    .splash-logo-text { display: block; font-family: 'Playfair Display', serif; font-size: 2.6rem; font-weight: 700; letter-spacing: 0.08em; color: var(--green); margin-bottom: 0.6rem; }
+    .splash-tag { font-size: 1.05rem; font-weight: 600; color: var(--terra-dark); margin-bottom: 2rem; letter-spacing: 0.08em; }
+    .splash-forest { position: relative; height: 110px; display: flex; align-items: flex-end; justify-content: center; gap: 1rem; margin: 0 auto; }
+    .tree { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 44px; height: 110px; }
+    .trunk { width: 10px; height: 24px; background: #7A5A3A; border-radius: 999px; margin-top: 8px; opacity: 0; animation: trunkGrow 0.7s ease forwards; }
+    .tree .foliage {
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-bottom: 32px solid var(--green);
+      transform-origin: center bottom;
+      transform: scaleY(0);
+      opacity: 0;
+      border-radius: 12px 12px 0 0;
+      animation: treeGrow 0.9s ease forwards;
+    }
+    .tree-1 .foliage { animation-delay: 0.35s; }
+    .tree-1 .trunk { animation-delay: 0.55s; }
+    .tree-2 .foliage { animation-delay: 0.45s; }
+    .tree-2 .trunk { animation-delay: 0.65s; }
+    .tree-3 .foliage { animation-delay: 0.55s; }
+    .tree-3 .trunk { animation-delay: 0.75s; }
+    .tree-4 .foliage { animation-delay: 0.65s; }
+    .tree-4 .trunk { animation-delay: 0.85s; }
+
+    @keyframes popIn { from { opacity: 0; transform: translateY(18px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes treeGrow { from { opacity: 0; transform: scaleY(0.1); } to { opacity: 1; transform: scaleY(1); } }
+    @keyframes trunkGrow { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ANIMATIONS */
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; flex-direction: column; }
+      .nav-links.open { display: flex; position: absolute; top: 70px; left: 0; right: 0; background: var(--cream); padding: 1.5rem 2rem; border-bottom: 1px solid var(--cream-dark); z-index: 99; }
+      .nav-toggle { display: flex; }
+      .community-grid { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr; gap: 2rem; }
+    }
+    
+    /* Dev helper button to force/show splash */
+    .dev-splash-btn {
+      position: fixed; right: 14px; bottom: 14px; z-index: 1500;
+      background: rgba(76,106,60,0.95); color: #fff; border: none; padding: 0.45rem 0.7rem; border-radius: 999px; cursor: pointer; font-size: 0.85rem; box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      opacity: 0.9;
+    }
+    .dev-splash-btn:hover { transform: translateY(-2px); }
+  </style>
+  <link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body>
+  <div class="splash" id="splashScreen">
+    <div class="splash-inner">
+      <div class="splash-brand">
+        <svg class="splash-logo-icon" viewBox="0 0 38 38" fill="none" aria-hidden="true">
+          <circle cx="19" cy="19" r="19" fill="#4C6A3C" opacity="0.15"/>
+          <path d="M19 6 C12 10, 8 17, 11 24 C14 30, 22 32, 27 27 C32 22, 30 12, 19 6Z" fill="#4C6A3C"/>
+          <path d="M19 6 L17 26" stroke="#F5EDE0" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M19 14 C17 17, 16 20, 19 22 C22 20, 21 17, 19 14Z" fill="#C1714F"/>
+        </svg>
+        <span class="splash-logo-text">STRAVAL</span>
+      </div>
+      <p class="splash-tag">La v0.2.0 est la !</p>
+      <div class="splash-forest">
+        <div class="tree tree-1"><div class="foliage"></div><div class="trunk"></div></div>
+        <div class="tree tree-2"><div class="foliage"></div><div class="trunk"></div></div>
+        <div class="tree tree-3"><div class="foliage"></div><div class="trunk"></div></div>
+        <div class="tree tree-4"><div class="foliage"></div><div class="trunk"></div></div>
+      </div>
+    </div>
+  </div>
+
+<header>
+  <nav>
+    <a href="index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 38 38" fill="none">
+        <circle cx="19" cy="19" r="19" fill="#4C6A3C" opacity="0.15"/>
+        <path d="M19 6 C12 10, 8 17, 11 24 C14 30, 22 32, 27 27 C32 22, 30 12, 19 6Z" fill="#4C6A3C"/>
+        <path d="M19 6 L17 26" stroke="#F5EDE0" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M19 14 C17 17, 16 20, 19 22 C22 20, 21 17, 19 14Z" fill="#C1714F"/>
+      </svg>
+      <span class="logo-text">STRA<span>VAL V1.2</span></span>
+    </a>
+    <div class="mode-switch">
+      <label class="switch">
+        <input type="checkbox" id="modeToggle" aria-label="Basculer vers Stravaaaal" />
+        <span class="slider"></span>
+      </label>
+      <span class="mode-label" id="modeLabel">Starval</span>
+    </div>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="map.html">Carte</a></li>
+      <li><a href="spots.html">Spots</a></li>
+      <li><a href="login.html" class="btn-nav">Connexion</a></li>
+    </ul>
+    <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="hero-badge">🌿 Rencontre nature — mise en bouche...</div>
+    <h1>Reconnecte-toi à la <em>nature</em>,<br/>ensemble.</h1>
+    <p>STRAVAL te connecte à des inconnus qui partagent ta passion pour la nature. Explore des spots sauvages, crée tes propres lieux, et vis des rencontres authentiques.</p>
+    <div class="hero-cta">
+      <a href="map.html" class="btn-primary">Explorer en tant qu'invité</a>
+      <a href="login.html" class="btn-secondary">Créer un compte</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num">148+</div><div class="stat-label">Spots créés</div></div>
+      <div class="stat"><div class="stat-num">340+</div><div class="stat-label">Membres actifs</div></div>
+      <div class="stat"><div class="stat-num">4.8★</div><div class="stat-label">Note moyenne</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="how">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-tag">Comment ça marche</span>
+      <h2 class="section-title">Trois étapes vers l'essentiel</h2>
+      <p class="section-sub">Une expérience simple, humaine et ancrée dans le vivant.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card reveal">
+        <div class="step-num">01</div>
+        <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+        <h3>Trouve un spot</h3>
+        <p>Explore la carte interactive pour découvrir des spots créés par la communauté : forêts, rivières, sommets, coins reculé,  clairières…</p>
+      </div>
+      <div class="step-card reveal">
+        <div class="step-num">02</div>
+        <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
+        <h3>Rejoins la communauté</h3>
+        <p>Participe à des sorties nature avec des inconnus qui partagent tes valeurs. Chaque rencontre est une aventure unique.</p>
+      </div>
+      <div class="step-card reveal">
+        <div class="step-num">03</div>
+        <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+        <h3>Note l'expérience</h3>
+        <p>Après chaque sortie, évalue tes compagnons d'aventure. Construis ta réputation au fil des rencontres en nature.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="spots">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-tag">Spots populaires</span>
+      <h2 class="section-title">Les lieux préférés de la communauté</h2>
+      <p class="section-sub">Découverts, partagés et notés par les membres STRAVAL.</p>
+    </div>
+    <div class="spots-grid">
+      <div class="spot-card reveal">
+        <div class="spot-img"><div class="spot-img-bg foret">🌲</div><span class="spot-badge">🌲 Forêt</span></div>
+        <div class="spot-body">
+          <div class="spot-name">Clairière des Vents</div>
+          <div class="spot-loc">📍 Fontainebleau, Île-de-France</div>
+          <div class="spot-coords" style="font-size:0.85rem;color:var(--text-light);margin-bottom:0.6rem;">GPS : 48.40440, 2.70050</div>
+          <div class="spot-footer"><div><span class="stars">★★★★★</span><span class="star-score">4.9</span></div><a href="spots.html" class="btn-spot">Voir le spot</a></div>
+        </div>
+      </div>
+      <div class="spot-card reveal">
+        <div class="spot-img"><div class="spot-img-bg montagne">⛰️</div><span class="spot-badge">⛰️ Montagne</span></div>
+        <div class="spot-body">
+          <div class="spot-name">Crête des Soupirs</div>
+          <div class="spot-loc">📍 Vercors, Auvergne-Rhône-Alpes</div>
+          <div class="spot-coords" style="font-size:0.85rem;color:var(--text-light);margin-bottom:0.6rem;">GPS : 45.04290, 5.50470</div>
+          <div class="spot-footer"><div><span class="stars">★★★★☆</span><span class="star-score">4.6</span></div><a href="spots.html" class="btn-spot">Voir le spot</a></div>
+        </div>
+      </div>
+      <div class="spot-card reveal">
+        <div class="spot-img"><div class="spot-img-bg riviere">🏞️</div><span class="spot-badge">💧 Rivière</span></div>
+        <div class="spot-body">
+          <div class="spot-name">Méandre Sauvage</div>
+          <div class="spot-loc">📍 Ardèche, Occitanie</div>
+          <div class="spot-coords" style="font-size:0.85rem;color:var(--text-light);margin-bottom:0.6rem;">GPS : 44.30280, 4.28360</div>
+          <div class="spot-footer"><div><span class="stars">★★★★★</span><span class="star-score">4.8</span></div><a href="spots.html" class="btn-spot">Voir le spot</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="community">
+  <div class="section-inner">
+    <div class="community-grid">
+      <div class="community-text reveal">
+        <span class="section-tag">Communauté</span>
+        <h2 class="section-title">Une réputation construite par les autres</h2>
+        <p>Sur STRAVAL, chaque membre connecté reçoit une note basée sur les évaluations des personnes avec qui il a partagé des moments en nature. Plus tu es authentique, plus ta note reflète qui tu es vraiment.</p>
+        <a href="login.html" class="btn-cta">Rejoindre STRAVAL</a>
+      </div>
+      <div class="avatars-panel reveal">
+        <div class="avatar-row"><div class="avatar av1">M</div><div class="avatar-info"><div class="avatar-name">Marie L.</div><div class="avatar-spots">12 spots · 8 sorties</div></div><div class="avatar-rating">⭐ 4.9</div></div>
+        <div class="avatar-row"><div class="avatar av2">T</div><div class="avatar-info"><div class="avatar-name">Thomas B.</div><div class="avatar-spots">7 spots créés · 15 sorties</div></div><div class="avatar-rating">⭐ 4.7</div></div>
+        <div class="avatar-row"><div class="avatar av3">S</div><div class="avatar-info"><div class="avatar-name">Sofia D.</div><div class="avatar-spots">5 spots · 6 sorties</div></div><div class="avatar-rating">⭐ 4.8</div></div>
+        <div class="avatar-row"><div class="avatar av4">K</div><div class="avatar-info"><div class="avatar-name">Karim N.</div><div class="avatar-spots">20 spots · 22 sorties</div></div><div class="avatar-rating">⭐ 5.0</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="index.html" class="logo">
+        <svg class="logo-icon" viewBox="0 0 38 38" fill="none"><circle cx="19" cy="19" r="19" fill="#4C6A3C" opacity="0.2"/><path d="M19 6 C12 10, 8 17, 11 24 C14 30, 22 32, 27 27 C32 22, 30 12, 19 6Z" fill="#7A9A65"/><path d="M19 6 L17 26" stroke="#F5EDE0" stroke-width="1.2" stroke-linecap="round"/><path d="M19 14 C17 17, 16 20, 19 22 C22 20, 21 17, 19 14Z" fill="#E8A882"/></svg>
+        <span class="logo-text">STRA<span>VAL</span></span>
+      </a>
+      <p class="footer-tagline">Des rencontres authentiques,<br/>ancrées dans le vivant.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Naviguer</h4>
+      <a href="index.html">Accueil</a><a href="map.html">Carte des spots</a><a href="spots.html">Explorer</a><a href="login.html">Connexion</a>
+    </div>
+    <div class="footer-col">
+      <h4>Projet</h4>
+      <a href="#">À propos</a><a href="#">Valeurs</a><a href="#">Contact</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 STRAVAL • Fait avec 🌿 et passion</span>
+    <span>Prototype — GitHub Pages</span>
+  </div>
+</footer>
+
+  <audio id="splashAudio" src="splash-sound.wav" preload="auto" playsinline></audio>
+  <script src="js/responsive.js"></script>
+
+<script>
+  document.getElementById('navToggle').addEventListener('click', () => {
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  const modeToggle = document.getElementById('modeToggle');
+  const modeLabel = document.getElementById('modeLabel');
+  if (modeToggle && modeLabel) {
+    modeToggle.addEventListener('change', (event) => {
+      if (event.target.checked) {
+        modeLabel.textContent = 'Stravaaaal (utilisateurs aguéris uniquement 🫣)';
+        window.location.href = 'stravaaaal.html';
+      }
+    });
+  }
+
+  window.addEventListener('load', () => {
+    const splash = document.getElementById('splashScreen');
+    const splashAudio = document.getElementById('splashAudio');
+    const flagKey = 'splashSeen_v0.2.0';
+    if (!splash) return;
+
+    // Si on passe ?splash=1 dans l'URL, forcer l'affichage (utile pour tester)
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('splash') === '1') { sessionStorage.removeItem(flagKey); }
+    } catch (e) { /* ignore */ }
+
+    console.log('[splash] checking sessionStorage flag', flagKey);
+    // Si l'utilisateur a déjà vu le splash pour cette version dans CETTE session (onglet), on l'enlève tout de suite
+    try {
+      const seen = sessionStorage.getItem(flagKey);
+      if (seen) {
+        console.log('[splash] already seen in this session, removing splash');
+        splash.remove();
+        document.body.classList.remove('splash-active');
+        return;
+      } else {
+        console.log('[splash] not seen in this session — will show splash');
+      }
+    } catch (e) {
+      // si sessionStorage indisponible, continuer et montrer le splash
+    }
+
+    // Montrer splash la première fois
+    document.body.classList.add('splash-active');
+    if (splashAudio) {
+      splashAudio.play().catch(() => {
+        /* Autoplay peut être bloqué par le navigateur avant une interaction utilisateur. */
+      });
+    }
+    setTimeout(() => {
+      splash.classList.add('hidden');
+      if (splashAudio) { try { splashAudio.pause(); splashAudio.currentTime = 0; } catch (e) {} }
+    }, 3100);
+    setTimeout(() => {
+      splash.remove();
+      document.body.classList.remove('splash-active');
+      try { sessionStorage.setItem(flagKey, '1'); } catch(e) { /* ignore */ }
+    }, 4200);
+  });
+
+  // Raccourci clavier pour développeurs : Shift+S supprime le flag de session et recharge la page
+  window.addEventListener('keydown', (e) => {
+    if (e.shiftKey && e.key.toLowerCase() === 's') {
+      try { sessionStorage.removeItem('splashSeen_v0.2.0'); } catch (err) {}
+      location.reload();
+    }
+  });
+
+  // Bouton visible pour réinitialiser le splash (utilisateur / test rapide)
+  (function createDevButton(){
+    try {
+      const btn = document.createElement('button');
+      btn.id = 'devSplashBtn';
+      btn.className = 'dev-splash-btn';
+      btn.textContent = 'Voir le splash';
+      btn.title = 'Supprime le flag splash et recharge pour voir l\'animation';
+      btn.addEventListener('click', () => {
+        try { sessionStorage.removeItem('splashSeen_v0.2.0'); } catch (e) {}
+        location.reload();
+      });
+      document.body.appendChild(btn);
+    } catch (e) { /* ignore in older browsers */ }
+  })();
+</script>
+</body>
+</html>
