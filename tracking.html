@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STRAVAL — Suivi en direct</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --terra: #C1714F; --terra-dark: #9B5A3A; --terra-light: #E8A882;
+      --green: #4C6A3C; --green-light: #7A9A65;
+      --cream: #F5EDE0; --cream-dark: #E8D9C0;
+      --text: #2C2015; --text-light: #6B5744; --white: #FFFDF8;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    header { background: rgba(245,237,224,0.97); backdrop-filter: blur(10px); border-bottom: 1px solid var(--cream-dark); padding: 0 2rem; }
+    nav { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 1rem; }
+    .logo { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; }
+    .logo-icon { width: 34px; height: 34px; }
+    .logo-text { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--terra-dark); letter-spacing: 0.05em; }
+    .logo-text span { color: var(--green); }
+    .nav-links { display: flex; align-items: center; gap: 1.5rem; list-style: none; }
+    .nav-links a { text-decoration: none; font-size: 0.9rem; font-weight: 500; color: var(--text-light); transition: color 0.2s; }
+    .nav-links a:hover, .nav-links a.active { color: var(--terra); }
+    .btn-nav { background: var(--terra); color: var(--white) !important; padding: 0.45rem 1.1rem; border-radius: 2rem; }
+    .btn-nav:hover { background: var(--terra-dark) !important; }
+    .tracking-layout { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; min-height: calc(100vh - 64px); }
+    .tracker-panel { background: var(--white); padding: 2rem; display: flex; flex-direction: column; gap: 1.25rem; border-right: 1px solid var(--cream-dark); }
+    .tracker-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .tracker-login { font-size: 0.95rem; color: var(--text-light); }
+    .tracker-tabs { display: flex; gap: 0.5rem; }
+    .tracker-tab { flex: 1; border: 1px solid var(--cream-dark); border-radius: 1rem; background: var(--cream); color: var(--text); padding: 0.75rem 0.9rem; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: background 0.2s, border-color 0.2s; }
+    .tracker-tab.active { background: var(--terra); border-color: var(--terra); color: var(--white); }
+    .tracker-content { display: none; }
+    .tracker-content.active { display: block; }
+    .tracker-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.8rem; margin-bottom: 1rem; }
+    .tracker-stat { background: var(--cream); border-radius: 1rem; padding: 1rem; text-align: center; }
+    .tracker-stat strong { display: block; font-family: 'Playfair Display', serif; font-size: 1.15rem; color: var(--terra); margin-bottom: 0.3rem; }
+    .tracker-stat span { display: block; font-size: 0.8rem; color: var(--text-light); }
+    .tracker-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .add-spot-btn, .tracker-action-btn { background: var(--terra); color: white; border: none; border-radius: 1rem; padding: 0.9rem 1rem; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.2s; }
+    .add-spot-btn:hover, .tracker-action-btn:hover { background: var(--terra-dark); transform: translateY(-1px); }
+    .tracker-sensor { color: var(--text-light); font-size: 0.92rem; }
+    .history-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.7rem; }
+    .history-list { max-height: 360px; overflow-y: auto; display: grid; gap: 0.65rem; }
+    .history-entry { background: #faf5ef; border: 1px solid var(--cream-dark); border-radius: 1rem; padding: 1rem; display: grid; gap: 0.55rem; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .history-entry:hover { transform: translateY(-1px); box-shadow: 0 12px 25px rgba(0,0,0,0.08); }
+    .history-entry strong { font-size: 0.95rem; color: var(--terra); }
+    .history-entry span { font-size: 0.85rem; color: var(--text-light); }
+    .history-entry-actions { display: flex; justify-content: flex-end; }
+    .share-btn { background: #0b8a43; color: white; border: none; border-radius: 999px; padding: 0.5rem 0.85rem; font-size: 0.82rem; cursor: pointer; transition: background 0.2s; }
+    .share-btn:hover { background: #036b31; }
+    .history-empty { font-size: 0.9rem; color: var(--text-light); text-align: center; padding: 1rem; }
+    .map-panel { position: relative; }
+    #map { width: 100%; height: 100%; }
+    .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: rgba(31,20,14,0.92); color: white; padding: 0.95rem 1.4rem; border-radius: 999px; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 9999; font-size: 0.95rem; }
+    .toast.show { opacity: 1; pointer-events: auto; }
+    @media (max-width: 980px) {
+      .tracking-layout { grid-template-columns: 1fr; }
+      .tracker-panel { border-right: none; border-bottom: 1px solid var(--cream-dark); }
+      .map-panel { min-height: 50vh; }
+    }
+    @media (max-width: 680px) {
+      nav { flex-wrap: wrap; align-items: flex-start; padding-bottom: 1rem; }
+      .nav-links { flex-wrap: wrap; gap: 0.75rem; }
+      .tracker-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <nav>
+    <a href="index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 38 38" fill="none">
+        <circle cx="19" cy="19" r="19" fill="#4C6A3C" opacity="0.15" />
+        <path d="M19 6 C12 10, 8 17, 11 24 C14 30, 22 32, 27 27 C32 22, 30 12, 19 6Z" fill="#4C6A3C" />
+        <path d="M19 6 L17 26" stroke="#F5EDE0" stroke-width="1.2" stroke-linecap="round" />
+        <path d="M19 14 C17 17, 16 20, 19 22 C22 20, 21 17, 19 14Z" fill="#C1714F" />
+      </svg>
+      <span class="logo-text">STRA<span>VAL V1.2.1</span></span>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="map.html">Carte</a></li>
+      <li><a href="spots.html">Spots</a></li>
+      <li><a href="tracking.html" class="active">Suivi</a></li>
+      <li><a href="login.html" class="btn-nav">Connexion</a></li>
+    </ul>
+  </nav>
+</header>
+
+<div class="tracking-layout">
+  <aside class="tracker-panel">
+    <div>
+      <div class="tracker-title">Suivi en direct</div>
+      <div class="tracker-login" id="trackerLoginStatus">Connecte-toi sur login.html pour synchroniser ton activité.</div>
+    </div>
+    <div class="tracker-tabs">
+      <button class="tracker-tab active" id="tabLive">Live</button>
+      <button class="tracker-tab" id="tabHistory">Historique</button>
+    </div>
+    <div class="tracker-content tracker-live-content active">
+      <div class="tracker-grid">
+        <div class="tracker-stat"><strong id="liveDistance">0.0 km</strong><span>Distance</span></div>
+        <div class="tracker-stat"><strong id="liveAvgSpeed">0.0 km/h</strong><span>Vitesse moyenne</span></div>
+        <div class="tracker-stat"><strong id="liveMaxSpeed">0.0 km/h</strong><span>Vitesse max</span></div>
+        <div class="tracker-stat"><strong id="liveTime">0h 00m</strong><span>Temps</span></div>
+      </div>
+      <div class="tracker-actions">
+        <button id="startTrackBtn" class="tracker-action-btn">▶ Démarrer le suivi</button>
+        <button id="stopTrackBtn" class="tracker-action-btn" style="display:none;background:#9B5A3A">■ Arrêter</button>
+      </div>
+      <div class="tracker-sensor" id="trackerSensor">Capteurs non disponibles</div>
+    </div>
+    <div class="tracker-content tracker-history-content">
+      <div class="history-title">Mes sorties</div>
+      <div class="history-list" id="historyList"><div class="history-empty">Aucune sortie enregistrée pour le moment.</div></div>
+    </div>
+  </aside>
+  <div class="map-panel">
+    <div id="map"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/responsive.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDNEN6s846Wz_83mAtTJwGk6-IO-JJnsHE",
+    authDomain: "straval-cf824.firebaseapp.com",
+    projectId: "straval-cf824",
+    storageBucket: "straval-cf824.firebasestorage.app",
+    messagingSenderId: "25642703432",
+    appId: "1:25642703432:web:0253d688f586d8c29c967d"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  function getGuestUser() {
+    return JSON.parse(localStorage.getItem('straval_guest_user') || 'null');
+  }
+
+  function getActiveMapUser() {
+    return currentMapUser || currentMapGuest;
+  }
+
+  function getTrackingStorageKey() {
+    const user = getActiveMapUser();
+    if (!user) return null;
+    return `straval_tracking_${user.uid || 'guest'}`;
+  }
+
+  function loadTrackingStorage() {
+    const key = getTrackingStorageKey();
+    if (!key) return { entries: [], totalKm: 0, totalSeconds: 0, avgSpeed: 0, maxSpeed: 0 };
+    const saved = JSON.parse(localStorage.getItem(key) || 'null');
+    return saved || { entries: [], totalKm: 0, totalSeconds: 0, avgSpeed: 0, maxSpeed: 0 };
+  }
+
+  function saveLatestGuestTrack() {
+    const key = getTrackingStorageKey();
+    if (!key || !tracker.positions.length) return;
+    const existing = JSON.parse(localStorage.getItem(key) || 'null') || { entries: [], totalKm: 0, totalSeconds: 0, avgSpeed: 0, maxSpeed: 0 };
+    const entry = {
+      date: new Date().toLocaleDateString('fr-FR'),
+      distance: tracker.totalKm,
+      duration: tracker.totalSeconds,
+      maxSpeed: tracker.maxSpeed,
+      avgSpeed: tracker.totalSeconds > 0 ? tracker.totalKm / (tracker.totalSeconds / 3600) : 0,
+      positions: tracker.positions.map(p => ({ lat: p.lat, lng: p.lng }))
+    };
+    existing.entries.push(entry);
+    existing.totalKm = existing.entries.reduce((sum, e) => sum + e.distance, 0);
+    existing.totalSeconds = existing.entries.reduce((sum, e) => sum + e.duration, 0);
+    existing.avgSpeed = existing.totalSeconds > 0 ? existing.totalKm / (existing.totalSeconds / 3600) : 0;
+    existing.maxSpeed = existing.entries.reduce((max, e) => Math.max(max, e.maxSpeed), 0);
+    localStorage.setItem(key, JSON.stringify(existing));
+    renderTrackingHistory();
+  }
+
+  function clearHistoryRoute() {
+    if (historyRoute) {
+      map.removeLayer(historyRoute);
+      historyRoute = null;
+    }
+    historyRouteMarkers.forEach(marker => marker && map.removeLayer(marker));
+    historyRouteMarkers = [];
+  }
+
+  function showHistoryRoute(index) {
+    const history = loadTrackingStorage();
+    const entry = history.entries[index];
+    if (!entry || !entry.positions || !entry.positions.length) {
+      showToast('Aucune trace disponible pour cette sortie.');
+      return;
+    }
+    clearHistoryRoute();
+    const line = entry.positions.map(p => [p.lat, p.lng]);
+    historyRoute = L.polyline(line, { color: '#4C6A3C', weight: 4, opacity: 0.9, dashArray: '6,4' }).addTo(map);
+    const start = line[0];
+    const end = line[line.length - 1];
+    historyRouteMarkers.push(L.circleMarker(start, { color: '#4C6A3C', radius: 5, fillOpacity: 1 }).addTo(map).bindPopup('Départ'));
+    historyRouteMarkers.push(L.circleMarker(end, { color: '#C1714F', radius: 6, fillOpacity: 1 }).addTo(map).bindPopup('Arrivée'));
+    const bounds = L.latLngBounds(line);
+    map.fitBounds(bounds.pad(0.2));
+    showToast('Trace affichée sur la carte');
+  }
+
+  function shareHistoryEntry(index) {
+    const history = loadTrackingStorage();
+    const entry = history.entries[index];
+    if (!entry) {
+      showToast('Impossible de partager cette sortie.');
+      return;
+    }
+    const user = getActiveMapUser();
+    const userName = user?.displayName || 'INVITÉ';
+    const canvas = document.createElement('canvas');
+    const width = 1200;
+    const height = 675;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    const background = ctx.createLinearGradient(0, 0, width, height);
+    background.addColorStop(0, '#051918');
+    background.addColorStop(0.45, '#0f3c2e');
+    background.addColorStop(1, '#142c3f');
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, width, height);
+
+    const glow = ctx.createRadialGradient(300, 160, 0, 300, 160, 260);
+    glow.addColorStop(0, 'rgba(95, 214, 157, 0.22)');
+    glow.addColorStop(1, 'rgba(95, 214, 157, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, width, height);
+
+    const cardX = 60;
+    const cardY = 60;
+    const cardW = width - 120;
+    const cardH = height - 120;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx.shadowBlur = 32;
+    ctx.fillStyle = '#0d1f19';
+    roundRect(cardX, cardY, cardW, cardH, 36);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 2;
+    roundRect(cardX, cardY, cardW, cardH, 36);
+    ctx.stroke();
+
+    const margin = 60;
+    const leftX = cardX + margin;
+    const panelY = cardY + margin;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 46px Inter, sans-serif';
+    ctx.fillText('EXPLOIT DE ROUTE', leftX, panelY);
+
+    ctx.font = '600 24px Inter, sans-serif';
+    ctx.fillStyle = '#b0f3c7';
+    ctx.fillText(`Par ${userName}`, leftX, panelY + 56);
+    ctx.fillText(entry.date, leftX, panelY + 92);
+
+    let statY = panelY + 150;
+    const drawStat = (label, value, color = '#ffffff') => {
+      ctx.fillStyle = color;
+      ctx.font = '700 42px Inter, sans-serif';
+      ctx.fillText(value, leftX, statY);
+      statY += 46;
+      ctx.fillStyle = '#b4c8d0';
+      ctx.font = '500 24px Inter, sans-serif';
+      ctx.fillText(label, leftX, statY);
+      statY += 48;
+    };
+
+    drawStat('Distance', `${entry.distance.toFixed(1)} km`, '#ffffff');
+    drawStat('Durée totale', formatDuration(entry.duration), '#ffffff');
+    drawStat('Vitesse moyenne', `${entry.avgSpeed.toFixed(1)} km/h`, '#8de2a4');
+    drawStat('Vitesse max', `${entry.maxSpeed.toFixed(1)} km/h`, '#ffffff');
+
+    const statsBoxW = 450;
+    const statsBoxH = 360;
+    const statsBoxX = cardX + cardW - statsBoxW - margin;
+    const statsBoxY = cardY + margin;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.18)';
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    roundRect(statsBoxX, statsBoxY, statsBoxW, statsBoxH, 28);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1.5;
+    roundRect(statsBoxX, statsBoxY, statsBoxW, statsBoxH, 28);
+    ctx.stroke();
+
+    const routeX = statsBoxX + 30;
+    const routeY = statsBoxY + 34;
+    const routeW = statsBoxW - 60;
+    const routeH = statsBoxH - 100;
+
+    ctx.fillStyle = '#eef5ea';
+    ctx.font = '700 24px Inter, sans-serif';
+    ctx.fillText('APERÇU DU PARCOURS', routeX, routeY - 34);
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    roundRect(routeX, routeY, routeW, routeH, 22);
+    ctx.fill();
+    ctx.restore();
+
+    const positions = entry.positions || [];
+    if (positions.length >= 2) {
+      const lats = positions.map(p => p.lat);
+      const lngs = positions.map(p => p.lng);
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+      const normLat = maxLat - minLat || 0.0001;
+      const normLng = maxLng - minLng || 0.0001;
+      ctx.save();
+      ctx.beginPath();
+      positions.forEach((p, i) => {
+        const x = routeX + 16 + ((p.lng - minLng) / normLng) * (routeW - 32);
+        const y = routeY + routeH - 16 - ((p.lat - minLat) / normLat) * (routeH - 32);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#6ce6ae';
+      ctx.lineWidth = 10;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = '#b0f3c7';
+      ctx.font = '500 18px Inter, sans-serif';
+      ctx.fillText('Trace capturée', routeX, routeY + routeH + 14);
+    } else {
+      ctx.fillStyle = '#9bb7a4';
+      ctx.font = '600 22px Inter, sans-serif';
+      ctx.fillText('Aucune trace disponible', routeX + 20, routeY + routeH / 2 - 12);
+    }
+
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `straval-exploit-${entry.date.replace(/\//g, '-')}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('Image prête ! Le téléchargement commence.');
+  }
+
+  function renderTrackingHistory() {
+    const history = loadTrackingStorage();
+    const list = document.getElementById('historyList');
+    if (!history.entries.length) {
+      list.innerHTML = '<div class="history-empty">Aucune sortie enregistrée pour le moment.</div>';
+      return;
+    }
+    const reversed = history.entries.slice().reverse();
+    list.innerHTML = reversed.map((entry, idx) => {
+      const actualIndex = history.entries.length - 1 - idx;
+      return `
+      <div class="history-entry" onclick="showHistoryRoute(${actualIndex})">
+        <div>
+          <strong>${entry.distance.toFixed(2)} km</strong>
+          <span>${entry.date} · ${formatDuration(entry.duration)} · Moyenne ${entry.avgSpeed.toFixed(1)} km/h · Max ${entry.maxSpeed.toFixed(1)} km/h</span>
+        </div>
+        <div class="history-entry-actions">
+          <button type="button" class="share-btn" onclick="event.stopPropagation(); shareHistoryEntry(${actualIndex})">Partager l'exploit</button>
+        </div>
+      </div>
+    `;    }).join('');
+  }
+
+  function setTrackerTab(tab) {
+    document.getElementById('tabLive').classList.toggle('active', tab === 'live');
+    document.getElementById('tabHistory').classList.toggle('active', tab === 'history');
+    document.querySelector('.tracker-live-content').classList.toggle('active', tab === 'live');
+    document.querySelector('.tracker-history-content').classList.toggle('active', tab === 'history');
+  }
+
+  let currentMapUser = null;
+  let currentMapGuest = null;
+  const map = L.map('map', { zoomControl: false }).setView([46.5, 2.5], 6);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CARTO', maxZoom: 19
+  }).addTo(map);
+  L.control.zoom({ position: 'topright' }).addTo(map);
+
+  const tracker = {
+    active: false,
+    watchId: null,
+    positions: [],
+    totalKm: 0,
+    totalSeconds: 0,
+    maxSpeed: 0,
+    startTimestamp: null,
+    lastTimestamp: null,
+    accelMax: 0,
+    currentSpeed: 0
+  };
+  let trackLine = null;
+  const trackerMarkers = { start: null, current: null };
+  let historyRoute = null;
+  let historyRouteMarkers = [];
+  const sensorSupported = typeof DeviceMotionEvent !== 'undefined';
+
+  function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function formatDuration(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+  }
+
+  function updateTrackerUI() {
+    document.getElementById('liveDistance').textContent = `${tracker.totalKm.toFixed(2)} km`;
+    document.getElementById('liveAvgSpeed').textContent = `${tracker.totalSeconds > 0 ? (tracker.totalKm / (tracker.totalSeconds / 3600)).toFixed(1) : 0} km/h`;
+    document.getElementById('liveMaxSpeed').textContent = `${tracker.maxSpeed.toFixed(1)} km/h`;
+    document.getElementById('liveTime').textContent = formatDuration(tracker.totalSeconds);
+    const sensorText = tracker.accelMax > 0 ? `Accélération max ${tracker.accelMax.toFixed(1)} m/s²` : (sensorSupported ? 'Capteurs détectés, en attente...' : 'Capteurs non disponibles');
+    document.getElementById('trackerSensor').textContent = sensorText;
+  }
+
+  function handleMotion(event) {
+    const motion = event.accelerationIncludingGravity || event.acceleration;
+    if (!motion) return;
+    const accel = Math.sqrt((motion.x || 0) ** 2 + (motion.y || 0) ** 2 + (motion.z || 0) ** 2);
+    if (accel > tracker.accelMax) tracker.accelMax = accel;
+    updateTrackerUI();
+  }
+
+  async function requestMotion() {
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      try {
+        const permission = await DeviceMotionEvent.requestPermission();
+        if (permission === 'granted') window.addEventListener('devicemotion', handleMotion);
+      } catch (err) {
+        console.warn('Permission capteurs refusée', err);
+      }
+    } else {
+      window.addEventListener('devicemotion', handleMotion);
+    }
+  }
+
+  function handlePosition(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const timestamp = pos.timestamp;
+    if (!tracker.startTimestamp) {
+      tracker.startTimestamp = timestamp;
+      tracker.lastTimestamp = timestamp;
+    }
+    const prev = tracker.positions.length ? tracker.positions[tracker.positions.length - 1] : null;
+    if (prev) {
+      const deltaSeconds = (timestamp - tracker.lastTimestamp) / 1000;
+      const dist = haversine(prev.lat, prev.lng, lat, lng);
+      if (deltaSeconds > 0) {
+        tracker.totalKm += dist;
+        tracker.totalSeconds += deltaSeconds;
+        tracker.currentSpeed = pos.coords.speed > 0 ? pos.coords.speed : (dist / deltaSeconds) * 3600;
+        tracker.maxSpeed = Math.max(tracker.maxSpeed, tracker.currentSpeed);
+      }
+    } else {
+      tracker.currentSpeed = pos.coords.speed || 0;
+    }
+    tracker.lastTimestamp = timestamp;
+    tracker.positions.push({ lat, lng, timestamp });
+    const point = [lat, lng];
+    if (!trackLine) {
+      trackLine = L.polyline([point], { color: '#C1714F', weight: 5, opacity: 0.9 }).addTo(map);
+    } else {
+      trackLine.addLatLng(point);
+    }
+    if (!trackerMarkers.start) {
+      trackerMarkers.start = L.circleMarker(point, { color: '#4C6A3C', radius: 6, fillOpacity: 0.9 }).addTo(map).bindPopup('Départ');
+    }
+    if (trackerMarkers.current) {
+      trackerMarkers.current.setLatLng(point);
+    } else {
+      trackerMarkers.current = L.circleMarker(point, { color: '#C1714F', radius: 8, fillOpacity: 1 }).addTo(map);
+    }
+    map.flyTo(point, 16, { animate: true, duration: 0.8 });
+    updateTrackerUI();
+  }
+
+  function startTracking() {
+    if (tracker.active) return;
+    if (!navigator.geolocation) return showToast('Géolocalisation non disponible');
+    tracker.active = true;
+    tracker.positions = [];
+    tracker.totalKm = 0;
+    tracker.totalSeconds = 0;
+    tracker.maxSpeed = 0;
+    tracker.currentSpeed = 0;
+    tracker.accelMax = 0;
+    tracker.startTimestamp = null;
+    tracker.lastTimestamp = null;
+    if (trackLine) { map.removeLayer(trackLine); trackLine = null; }
+    if (trackerMarkers.start) { map.removeLayer(trackerMarkers.start); trackerMarkers.start = null; }
+    if (trackerMarkers.current) { map.removeLayer(trackerMarkers.current); trackerMarkers.current = null; }
+    document.getElementById('startTrackBtn').style.display = 'none';
+    document.getElementById('stopTrackBtn').style.display = 'inline-flex';
+    tracker.watchId = navigator.geolocation.watchPosition(handlePosition, err => showToast('Erreur position : ' + err.message), { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 });
+    if (sensorSupported) requestMotion();
+    updateTrackerUI();
+    showToast('✅ Suivi démarré');
+  }
+
+  function stopTracking() {
+    if (!tracker.active) return;
+    tracker.active = false;
+    if (tracker.watchId !== null) navigator.geolocation.clearWatch(tracker.watchId);
+    tracker.watchId = null;
+    window.removeEventListener('devicemotion', handleMotion);
+    document.getElementById('startTrackBtn').style.display = 'inline-flex';
+    document.getElementById('stopTrackBtn').style.display = 'none';
+    saveLatestGuestTrack();
+    showToast('⏸ Suivi arrêté');
+  }
+
+  auth.onAuthStateChanged(user => {
+    currentMapUser = user;
+    currentMapGuest = user ? null : getGuestUser();
+    const status = document.getElementById('trackerLoginStatus');
+    if (user) {
+      status.textContent = `Connecté : ${user.displayName || user.email}`;
+    } else if (currentMapGuest) {
+      status.textContent = `Mode invité : ${currentMapGuest.displayName}`;
+    } else {
+      status.textContent = 'Connecte-toi sur login.html pour synchroniser ton activité';
+    }
+    renderTrackingHistory();
+  });
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  document.getElementById('startTrackBtn').addEventListener('click', startTracking);
+  document.getElementById('stopTrackBtn').addEventListener('click', stopTracking);
+  document.getElementById('tabLive').addEventListener('click', () => setTrackerTab('live'));
+  document.getElementById('tabHistory').addEventListener('click', () => setTrackerTab('history'));
+  renderTrackingHistory();
+</script>
+</body>
+</html>

@@ -171,6 +171,7 @@
       <li><a href="index.html">Accueil</a></li>
       <li><a href="map.html" class="active">Carte</a></li>
       <li><a href="spots.html">Spots</a></li>
+      <li><a href="tracking.html">Suivi</a></li>
       <li><a href="login.html" class="btn-nav">Connexion</a></li>
     </ul>
     <button class="nav-toggle" id="navToggle"><span></span><span></span><span></span></button>
@@ -423,6 +424,10 @@
       ctx.closePath();
     }
 
+    ctx.clearRect(0, 0, width, height);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
     const background = ctx.createLinearGradient(0, 0, width, height);
     background.addColorStop(0, '#051918');
     background.addColorStop(0.45, '#0f3c2e');
@@ -431,106 +436,92 @@
     ctx.fillRect(0, 0, width, height);
 
     const glow = ctx.createRadialGradient(300, 160, 0, 300, 160, 260);
-    glow.addColorStop(0, 'rgba(95, 214, 157, 0.25)');
+    glow.addColorStop(0, 'rgba(95, 214, 157, 0.22)');
     glow.addColorStop(1, 'rgba(95, 214, 157, 0)');
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, width, height);
+
+    const cardX = 60;
+    const cardY = 60;
+    const cardW = width - 120;
+    const cardH = height - 120;
 
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.35)';
     ctx.shadowBlur = 32;
     ctx.fillStyle = '#0d1f19';
-    roundRect(50, 50, width - 100, height - 100, 36);
-    ctx.fill();
-    ctx.restore();
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '800 48px Inter, sans-serif';
-    ctx.fillText('EXPLOIT DE ROUTE', 90, 120);
-
-    ctx.font = '600 26px Inter, sans-serif';
-    ctx.fillStyle = '#b0f3c7';
-    ctx.fillText(`Par ${userName}`, 90, 160);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '700 90px Inter, sans-serif';
-    ctx.fillText(`${entry.distance.toFixed(1)} km`, 90, 270);
-
-    ctx.font = '600 32px Inter, sans-serif';
-    ctx.fillStyle = '#8de2a4';
-    ctx.fillText(`${entry.avgSpeed.toFixed(1)} km/h`, 90, 340);
-    ctx.fillStyle = '#b4c8d0';
-    ctx.font = '500 24px Inter, sans-serif';
-    ctx.fillText('Vitesse moyenne', 90, 375);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '600 32px Inter, sans-serif';
-    ctx.fillText(`${entry.maxSpeed.toFixed(1)} km/h`, 90, 435);
-    ctx.fillStyle = '#b4c8d0';
-    ctx.font = '500 24px Inter, sans-serif';
-    ctx.fillText('Vitesse max', 90, 470);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '600 32px Inter, sans-serif';
-    ctx.fillText(formatDuration(entry.duration), 90, 530);
-    ctx.fillStyle = '#b4c8d0';
-    ctx.font = '500 24px Inter, sans-serif';
-    ctx.fillText('Durée totale', 90, 565);
-
-    ctx.fillStyle = '#8a8a8a';
-    ctx.font = '500 22px Inter, sans-serif';
-    ctx.fillText(entry.date, 90, 615);
-
-    const panelX = 680;
-    const panelY = 180;
-    const panelW = 430;
-    const panelH = 390;
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.28)';
-    ctx.shadowBlur = 28;
-    ctx.fillStyle = 'rgba(255,255,255,0.05)';
-    roundRect(panelX, panelY, panelW, panelH, 28);
+    roundRect(cardX, cardY, cardW, cardH, 36);
     ctx.fill();
     ctx.restore();
 
     ctx.strokeStyle = 'rgba(255,255,255,0.12)';
     ctx.lineWidth = 2;
-    roundRect(panelX, panelY, panelW, panelH, 28);
+    roundRect(cardX, cardY, cardW, cardH, 36);
     ctx.stroke();
 
-    ctx.fillStyle = '#d9f9e4';
-    ctx.font = '700 32px Inter, sans-serif';
-    ctx.fillText('TRACE ÉPIQUE', panelX + 30, panelY + 50);
+    const margin = 60;
+    const leftX = cardX + margin;
+    const panelY = cardY + margin;
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = '500 22px Inter, sans-serif';
-    ctx.fillText(`Distance`, panelX + 30, panelY + 100);
-    ctx.font = '700 36px Inter, sans-serif';
-    ctx.fillText(`${entry.distance.toFixed(1)} km`, panelX + 30, panelY + 145);
+    ctx.font = '800 46px Inter, sans-serif';
+    ctx.fillText('EXPLOIT DE ROUTE', leftX, panelY);
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '500 22px Inter, sans-serif';
-    ctx.fillText(`Moyenne`, panelX + 30, panelY + 200);
-    ctx.font = '700 36px Inter, sans-serif';
-    ctx.fillText(`${entry.avgSpeed.toFixed(1)} km/h`, panelX + 30, panelY + 245);
+    ctx.font = '600 24px Inter, sans-serif';
+    ctx.fillStyle = '#b0f3c7';
+    ctx.fillText(`Par ${userName}`, leftX, panelY + 56);
+    ctx.fillText(entry.date, leftX, panelY + 92);
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '500 22px Inter, sans-serif';
-    ctx.fillText(`Max`, panelX + 30, panelY + 300);
-    ctx.font = '700 36px Inter, sans-serif';
-    ctx.fillText(`${entry.maxSpeed.toFixed(1)} km/h`, panelX + 30, panelY + 345);
+    const statX = leftX;
+    let statY = panelY + 150;
+    const labelSize = '500 24px Inter, sans-serif';
+    const valueSize = '700 42px Inter, sans-serif';
 
-    ctx.fillStyle = '#6ee0a2';
-    ctx.font = '800 20px Inter, sans-serif';
-    ctx.fillText('CELESTE', panelX + 260, panelY + 50);
+    const drawStat = (label, value, color = '#ffffff') => {
+      ctx.fillStyle = color;
+      ctx.font = valueSize;
+      ctx.fillText(value, statX, statY);
+      statY += 46;
+      ctx.fillStyle = '#b4c8d0';
+      ctx.font = labelSize;
+      ctx.fillText(label, statX, statY);
+      statY += 48;
+    };
 
-    const routeX = panelX + 40;
-    const routeY = panelY + panelH - 170;
-    const routeW = panelW - 80;
-    const routeH = 120;
-    ctx.fillStyle = 'rgba(255,255,255,0.06)';
-    roundRect(routeX, routeY, routeW, routeH, 20);
+    drawStat('Distance', `${entry.distance.toFixed(1)} km`, '#ffffff');
+    drawStat('Durée totale', formatDuration(entry.duration), '#ffffff');
+    drawStat('Vitesse moyenne', `${entry.avgSpeed.toFixed(1)} km/h`, '#8de2a4');
+    drawStat('Vitesse max', `${entry.maxSpeed.toFixed(1)} km/h`, '#ffffff');
+
+    const statsBoxW = 450;
+    const statsBoxH = 360;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.18)';
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    roundRect(cardX + cardW - statsBoxW - margin, cardY + margin, statsBoxW, statsBoxH, 28);
     ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1.5;
+    roundRect(cardX + cardW - statsBoxW - margin, cardY + margin, statsBoxW, statsBoxH, 28);
+    ctx.stroke();
+
+    const routeX = cardX + cardW - statsBoxW - margin + 30;
+    const routeY = cardY + margin + 34;
+    const routeW = statsBoxW - 60;
+    const routeH = statsBoxH - 100;
+
+    ctx.fillStyle = '#eef5ea';
+    ctx.font = '700 24px Inter, sans-serif';
+    ctx.fillText('APERÇU DU PARCOURS', routeX, routeY - 34);
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    roundRect(routeX, routeY, routeW, routeH, 22);
+    ctx.fill();
+    ctx.restore();
 
     const positions = entry.positions || [];
     if (positions.length >= 2) {
@@ -540,41 +531,36 @@
       const maxLat = Math.max(...lats);
       const minLng = Math.min(...lngs);
       const maxLng = Math.max(...lngs);
-      const margin = 20;
-      const availableW = routeW - margin * 2;
-      const availableH = routeH - margin * 2;
+      const normLat = maxLat - minLat || 0.0001;
+      const normLng = maxLng - minLng || 0.0001;
       ctx.save();
       ctx.beginPath();
       positions.forEach((p, i) => {
-        const x = routeX + margin + ((p.lng - minLng) / (maxLng - minLng || 1)) * availableW;
-        const y = routeY + routeH - margin - ((p.lat - minLat) / (maxLat - minLat || 1)) * availableH;
+        const x = routeX + 16 + ((p.lng - minLng) / normLng) * (routeW - 32);
+        const y = routeY + routeH - 16 - ((p.lat - minLat) / normLat) * (routeH - 32);
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       });
       ctx.strokeStyle = '#6ce6ae';
-      ctx.lineWidth = 8;
+      ctx.lineWidth = 10;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       ctx.stroke();
       ctx.restore();
 
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#b0f3c7';
       ctx.font = '500 18px Inter, sans-serif';
-      ctx.fillText('Aperçu du parcours', routeX, routeY - 12);
+      ctx.fillText('Trace capturée', routeX, routeY + routeH + 14);
     } else {
       ctx.fillStyle = '#9bb7a4';
-      ctx.font = '500 21px Inter, sans-serif';
-      ctx.fillText('Pas de trace visible', routeX + 30, routeY + 90);
+      ctx.font = '600 22px Inter, sans-serif';
+      ctx.fillText('Aucune trace disponible', routeX + 20, routeY + routeH / 2 - 12);
     }
-
-    ctx.fillStyle = '#eef5ea';
-    ctx.font = '700 24px Inter, sans-serif';
-    ctx.fillText('RASSEMBLE TON EXPLOIT', 90, height - 40);
 
     const url = canvas.toDataURL('image/png');
     const a = document.createElement('a');
     a.href = url;
-    a.download = `straval-exploit-${entry.date.replace(/\//g,'-')}.png`;
+    a.download = `straval-exploit-${entry.date.replace(/\//g, '-')}.png`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -594,8 +580,8 @@
       return `
       <div class="history-entry" onclick="showHistoryRoute(${actualIndex})">
         <div>
-          <strong>${entry.distance.toFixed(2)} km — ${entry.maxSpeed.toFixed(1)} km/h</strong>
-          <span>${entry.date} · ${formatDuration(entry.duration)} · Moyenne ${entry.avgSpeed.toFixed(1)} km/h</span>
+          <strong>${entry.distance.toFixed(2)} km</strong>
+          <span>${entry.date} · ${formatDuration(entry.duration)} · Moyenne ${entry.avgSpeed.toFixed(1)} km/h · Max ${entry.maxSpeed.toFixed(1)} km/h</span>
         </div>
         <div class="history-entry-actions">
           <button type="button" class="share-btn" onclick="event.stopPropagation(); shareHistoryEntry(${actualIndex})">Partager l'exploit</button>
